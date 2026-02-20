@@ -80,5 +80,8 @@
     <ClInclude Include="sdl_context.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="camera.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -18,6 +18,8 @@ const HexCell& HexAutomaton::cell(int q, int r) const {
 void HexAutomaton::randomize() {
     for (auto& cell : m_cells)
         cell.alive = (std::rand() % 2) == 0;
+
+    m_generation_count = 0;
 }
 
 int HexAutomaton::alive_neighbors(int q, int r) const {
@@ -38,6 +40,9 @@ int HexAutomaton::alive_neighbors(int q, int r) const {
 }
 
 void HexAutomaton::step() {
+    m_alive_count = 0;
+    m_generation_count++;
+
     // Primera pasada: calcular siguiente estado
     for (int r = 0; r < m_height; ++r) {
         for (int q = 0; q < m_width; ++q) {
@@ -48,8 +53,11 @@ void HexAutomaton::step() {
                 cell.next_alive = (neighbors == 2 || neighbors == 3);
             else
                 cell.next_alive = (neighbors == 3);
+
+            m_alive_count += cell.next_alive;
         }
     }
+
 
     // Segunda pasada: aplicar
     for (auto& cell : m_cells)

@@ -30,6 +30,7 @@
     <ClCompile Include="window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="camera.h" />
     <ClInclude Include="include\application.h" />
     <ClInclude Include="include\automaton\hex_automaton.h" />
     <ClInclude Include="include\core\event.h" />

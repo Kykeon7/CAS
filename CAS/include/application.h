@@ -22,16 +22,21 @@ private:
 	void render();
 
 private:
-	
-	bool m_is_running = false;
-
 	SDLContext m_sdl{ SDL_INIT_VIDEO | SDL_INIT_EVENTS };
 	std::unique_ptr<platform::Window> m_window;
 	std::unique_ptr<platform::Renderer> m_renderer;
 
 	GuiManager m_gui;
+	float m_simulation_speed = 10.0f;
+	ImVec4 m_alive_color = ImVec4(0.0f, 0.78f, 0.47f, 1.0f);
+	ImVec4 m_grid_color = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
+	ImVec4 m_background_color = ImVec4(0.08f, 0.08f, 0.08f, 1.0f);
+
 	HexAutomaton m_automaton{ 50, 40 };
 
+	Camera m_camera;
+
+	bool m_is_running = false;
 	bool m_is_simulating = false;
 
 };

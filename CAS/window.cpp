@@ -3,17 +3,20 @@
 #include <stdexcept>
 
 namespace cas::platform {
-Window::Window(std::string_view title, int width, int height) {
-	m_handle = SDL_CreateWindow(title.data(), width, height, 0);
+	Window::Window(std::string_view title, int width, int height) {
+		m_handle = SDL_CreateWindow(title.data(), width, height, 0);
 
-	if (!m_handle)
-		throw std::runtime_error(SDL_GetError());
+		if (!m_handle)
+			throw std::runtime_error(SDL_GetError());
+	}
+
+	Window::~Window() {
+		if (m_handle)
+			SDL_DestroyWindow(m_handle);
+	}
+
+	void Window::set_full_screen(bool enabled) {
+		SDL_SetWindowFullscreen(m_handle, enabled);
+	}
+
 }
-
-Window::~Window() {
-	if (m_handle)
-		SDL_DestroyWindow(m_handle);
-}
-
-}
-

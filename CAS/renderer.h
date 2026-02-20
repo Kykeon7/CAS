@@ -1,5 +1,7 @@
 #pragma once
 #include <SDL3/SDL.h>
+#include <memory>
+#include "camera.h"
 
 namespace cas::platform {
 class Renderer {
@@ -24,9 +26,12 @@ public:
 	void fill_hex(float cx, float cy, float size);
 
 	SDL_Renderer* native() const { return m_handle; }
+	void set_camera(Camera* camera) { m_camera = camera; }
 
 private:
 	SDL_Renderer* m_handle{};
+	Camera* m_camera = nullptr;
+	SDL_FColor m_draw_color{ 255.0f ,255.0f ,255.0f ,255.0f };
 };
 }
 

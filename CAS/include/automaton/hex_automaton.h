@@ -20,6 +20,12 @@ public:
 
     int width() const { return m_width; }
     int height() const { return m_height; }
+    int alive_count() const { return m_alive_count; }
+    int generation_count() const { return m_generation_count; }
+
+private:
+    int index(int q, int r) const;
+    int alive_neighbors(int q, int r) const;
 
 private:
     static constexpr std::array<std::pair<int, int>, 6> directions{ {
@@ -33,9 +39,8 @@ private:
 
     int m_width;
     int m_height;
+    int m_alive_count = 0;
+    int m_generation_count = 0;
 
     std::vector<HexCell> m_cells;
-
-    int index(int q, int r) const;
-    int alive_neighbors(int q, int r) const;
 };

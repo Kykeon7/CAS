@@ -10,55 +10,20 @@ namespace cas {
 Application::Application()
 	: m_automaton(50, 40) {
 
-	auto* driver = SDL_GetCurrentVideoDriver();
-	std::println(
-		"Current video driver: {}",
-		std::string_view(driver ? driver : "null")
-	);
-
-	std::println("SDL version linked: {}.{}.{}",
-		SDL_MAJOR_VERSION,
-		SDL_MINOR_VERSION,
-		SDL_MICRO_VERSION
-	);
-
-
-	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
-		std::println("SDL_Init failed: {}", SDL_GetError());
-		return;
-	}
-
-	std::println("Error after init: '{}'", SDL_GetError());
-
-	driver = SDL_GetCurrentVideoDriver();
-	std::println(
-		"Current video driver after init: {}",
-		std::string_view(driver ? driver : "null")
-	);
-
-	m_window = SDL_CreateWindow(
+	m_window = std::make_unique<platform::Window>(
 		"CAS - Cellular Automaton Simulator",
 		800,
-		600,
-		0
+		600
 	);
 
-	if (!m_window) {
-		std::println("SDL_CreateWindow failed: {}", SDL_GetError());
-		return;
-	}
+	m_renderer = std::make_unique<platform::Renderer>(
+		m_window->native()
+	);
 
-	SDL_SetWindowResizable(m_window, true);
-
-	m_renderer = SDL_CreateRenderer(m_window, nullptr);
-
-	if (!m_renderer) {
-		std::println("SDL_CreateRenderer failed: {}", SDL_GetError());
-		return;
-	}
-
-	m_gui.init(m_window, m_renderer);
-
+	m_gui.init(
+		m_window->native(),
+		m_renderer->native()
+	);
 	m_automaton.randomize();
 
 	m_is_running = true;
@@ -66,11 +31,6 @@ Application::Application()
 
 Application::~Application() {
 	m_gui.shutdown();
-
-	if (m_renderer) SDL_DestroyRenderer(m_renderer);
-	if (m_window) SDL_DestroyWindow(m_window);
-
-	SDL_Quit();
 }
 
 void Application::run() {
@@ -115,36 +75,57 @@ void Application::process_events() {
 }
 
 void Application::update(double dt) {
-	if (m_is_simulating)
+	auto& time = Time::instance();
+
+	if (!m_is_simulating) return;
+
+	if (time.every(0.1, 0)) // 10 updates por segundo
 		m_automaton.step();
+	
 }
 
-
 void Application::render() {
-	SDL_SetRenderDrawColor(m_renderer, 20, 20, 20, 255);
-	SDL_RenderClear(m_renderer);
+	m_renderer->clear(20, 20, 20, 255);
 
 	// ===== Dibujar automata =====
 
-	const int cell_size = 12;
+	const float size = 8.0f;
+	const float offset_x = 50.0f;
+	const float offset_y = 50.0f;
+
+	m_renderer->set_draw_color(60, 60, 60, 255);
+
+	for (int r = 0; r < m_automaton.height(); ++r) {
+		for (int q = 0; q < m_automaton.width(); ++q) {
+
+			float x = size * std::sqrt(3.0f) * (q + r * 0.5f);
+			float y = size * 1.5f * r;
+
+			m_renderer->draw_hex(
+				x + offset_x,
+				y + offset_y,
+				size
+			);
+		}
+	}
+
+	m_renderer->set_draw_color(203, 203, 203, 255);
 
 	for (int r = 0; r < m_automaton.height(); ++r) {
 		for (int q = 0; q < m_automaton.width(); ++q) {
 
 			const auto& cell = m_automaton.cell(q, r);
-
 			if (!cell.alive)
 				continue;
 
-			SDL_FRect rect{
-				static_cast<float>(q * cell_size),
-				static_cast<float>(r * cell_size),
-				static_cast<float>(cell_size),
-				static_cast<float>(cell_size)
-			};
+			float x = size * std::sqrt(3.0f) * (q + r * 0.5f);
+			float y = size * 1.5f * r;
 
-			SDL_SetRenderDrawColor(m_renderer, 0, 200, 120, 255);
-			SDL_RenderFillRect(m_renderer, &rect);
+			m_renderer->fill_hex(
+				x + offset_x,
+				y + offset_y,
+				size
+			);
 		}
 	}
 
@@ -172,9 +153,9 @@ void Application::render() {
 
 	ImGui::End();
 
-	m_gui.end_frame(m_renderer);
+	m_gui.end_frame(m_renderer->native());
 
-	SDL_RenderPresent(m_renderer);
+	m_renderer->present();
 }
 
 

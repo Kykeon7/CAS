@@ -45,6 +45,9 @@
     <ClCompile Include="renderer.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="sdl_context.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\application.h">
@@ -72,6 +75,9 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="renderer.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="sdl_context.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>

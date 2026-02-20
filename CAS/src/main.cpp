@@ -1,8 +1,17 @@
 #include "application.h"
 
+#include <print>
+
 int main(int argc, char* argv[]) {
-    cas::Application app;
-    app.run();
+
+    try {
+        cas::Application app;
+        app.run();
+    }
+    catch (const std::exception& e) {
+        std::println("{}", e.what());
+    }
+   
 
     return 0;
 }

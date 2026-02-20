@@ -19,6 +19,8 @@ void Time::tick() {
 		static_cast<double>(current_counter - m_last_counter) /
 		static_cast<double>(frequency);
 
+	m_last_counter = current_counter;
+
 	if (m_is_paused)
 		m_delta_time = 0.0;
 	else
@@ -26,6 +28,18 @@ void Time::tick() {
 }
 
 bool Time::every(double interval, int id) {
+	if (interval <= 0.0)
+		return false;
+
+	double& acc = m_accumulators[id];
+
+	acc += m_delta_time;
+
+	if (acc >= interval) {
+		acc -= interval;
+		return true;
+	}
+
 	return false;
 }
 

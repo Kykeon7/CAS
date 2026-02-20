@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="renderer.cpp" />
+    <ClCompile Include="sdl_context.cpp" />
     <ClCompile Include="src\application.cpp" />
     <ClCompile Include="src\gui_manager.cpp" />
     <ClCompile Include="src\hex_automaton.cpp" />
@@ -37,6 +38,7 @@
     <ClInclude Include="include\core\input_manger.h" />
     <ClInclude Include="include\core\time.h" />
     <ClInclude Include="renderer.h" />
+    <ClInclude Include="sdl_context.h" />
     <ClInclude Include="window.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

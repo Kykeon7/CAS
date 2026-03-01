@@ -1,4 +1,5 @@
-#include "renderer.h"
+#include "platform/renderer.h"
+
 #include <stdexcept>
 #include <cmath>
 #include <numbers>
@@ -8,7 +9,7 @@ Renderer::Renderer(SDL_Window* window) {
 	m_handle = SDL_CreateRenderer(window, nullptr);
 
 	if (!m_handle)
-		throw std::runtime_error(SDL_GetError());
+		throw std::runtime_error(SDL_GetError());   
 
 }
 

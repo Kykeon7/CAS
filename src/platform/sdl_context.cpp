@@ -1,4 +1,5 @@
-#include "sdl_context.h"
+#include "platform/sdl_context.h"
+
 #include <stdexcept>
 
 namespace cas {

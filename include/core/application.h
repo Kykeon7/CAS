@@ -1,13 +1,15 @@
 #pragma once
-#include <core/gui_manager.h>
-#include <automaton/hex_automaton.h>
 
-#include <SDL3/SDL.h>
-#include "../renderer.h"
+#include <core/gui_manager.h>
+
 #include <memory>
-#include "../window.h"
-#include "../sdl_context.h"
-#include "../event_bus.h"
+
+#include <automaton/hex_automaton.h>
+#include "platform/renderer.h"
+
+#include "platform/window.h"
+#include "platform/sdl_context.h"
+#include "event/event_bus.h"
 
 namespace cas {
 

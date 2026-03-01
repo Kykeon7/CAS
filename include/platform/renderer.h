@@ -1,7 +1,7 @@
 #pragma once
 #include <SDL3/SDL.h>
 #include <memory>
-#include "camera.h"
+#include "core/camera.h"
 
 namespace cas::platform {
 class Renderer {

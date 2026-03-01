@@ -2,8 +2,7 @@
 
 namespace cas {
 
-struct WindowResizedEvent
-{
+struct WindowResizedEvent {
     int width;
     int height;
 };

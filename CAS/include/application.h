@@ -7,6 +7,7 @@
 #include <memory>
 #include "../window.h"
 #include "../sdl_context.h"
+#include "../event_bus.h"
 
 namespace cas {
 
@@ -20,6 +21,8 @@ private:
 	void process_events();
 	void update(double dt);
 	void render();
+	void update_imgui_scale();
+	void handle_cell_click(float world_x, float world_y);
 
 private:
 	SDLContext m_sdl{ SDL_INIT_VIDEO | SDL_INIT_EVENTS };
@@ -36,8 +39,13 @@ private:
 
 	Camera m_camera;
 
+	EventBus m_event_bus;
+
 	bool m_is_running = false;
 	bool m_is_simulating = false;
+	float m_ui_scale = 1.0f;
+
+	std::vector<float> m_population_history;
 
 };
 

@@ -28,6 +28,8 @@ Application::Application()
 		m_renderer->native()
 	);
 
+	update_imgui_scale();
+
 	m_automaton.randomize();
 
 	m_is_running = true;
@@ -75,8 +77,14 @@ void Application::process_events() {
 			if (sc == SDL_SCANCODE_R)
 				m_automaton.randomize();
 
-			if (sc == SDL_SCANCODE_F11)
-				m_window->set_full_screen(!m_window->is_full_screen());
+			if (sc == SDL_SCANCODE_F11) {
+				bool fs = !m_window->is_full_screen();
+				m_window->set_full_screen(fs);
+
+				m_ui_scale = fs ? 1.5f : 1.0f;
+
+				ImGui::GetIO().FontGlobalScale = m_ui_scale;
+			}
 
 			if (sc == SDL_SCANCODE_W) m_camera.y -= speed;
 			if (sc == SDL_SCANCODE_S) m_camera.y += speed;
@@ -106,6 +114,24 @@ void Application::process_events() {
 			m_camera.x = world_x - mouse_x / m_camera.zoom;
 			m_camera.y = world_y - mouse_y / m_camera.zoom;
 		}
+
+		if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
+			ImGuiIO& io = ImGui::GetIO();
+			if (io.WantCaptureMouse)
+				continue;
+
+			if (event.button.button == SDL_BUTTON_LEFT) {
+				float mouse_x = static_cast<float>(event.button.x);
+				float mouse_y = static_cast<float>(event.button.y);
+
+				// Convertir a mundo
+				float world_x = mouse_x / m_camera.zoom + m_camera.x;
+				float world_y = mouse_y / m_camera.zoom + m_camera.y;
+
+				handle_cell_click(world_x, world_y);
+			}
+		}
+
 	}
 }
 
@@ -114,8 +140,16 @@ void Application::update(double dt) {
 
 	if (!m_is_simulating) return;
 
-	if (time.every(1 / m_simulation_speed, 0))
+	if (time.every(1 / m_simulation_speed, 0)) {
 		m_automaton.step();
+
+		m_population_history.push_back(
+			static_cast<float>(m_automaton.alive_count())
+		);
+
+		if (m_population_history.size() > 500)
+			m_population_history.erase(m_population_history.begin());
+	}
 	
 }
 
@@ -187,7 +221,7 @@ void Application::render() {
 	m_gui.begin_frame();
 
 	ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-	ImGui::SetNextWindowSize(ImVec2(320, 260), ImGuiCond_Always);
+	ImGui::SetNextWindowSize(ImVec2(320 * m_ui_scale, 260 * m_ui_scale), ImGuiCond_Always);
 
 	ImGuiWindowFlags flags =
 		ImGuiWindowFlags_NoMove |
@@ -242,6 +276,22 @@ void Application::render() {
 	ImGui::Text("R: Randomize");
 	ImGui::Text("ESC: Exit");
 
+	ImGui::Separator();
+	ImGui::Text("Population over time");
+
+	if (!m_population_history.empty()) {
+		ImGui::PlotLines(
+			"##Population",
+			m_population_history.data(),
+			static_cast<int>(m_population_history.size()),
+			0,
+			nullptr,
+			0.0f,
+			static_cast<float>(m_automaton.width() * m_automaton.height()),
+			ImVec2(0, 80 * m_ui_scale)
+		);
+	}
+
 	ImGui::End();
 
 	m_gui.end_frame(m_renderer->native());
@@ -249,4 +299,53 @@ void Application::render() {
 	m_renderer->present();
 }
 
+void Application::update_imgui_scale() {
+	float scale = SDL_GetWindowDisplayScale(m_window->native());
+
+	if (scale <= 0.0f)
+		scale = 1.0f;
+
+	ImGui::GetIO().FontGlobalScale = scale;
+}
+
+void Application::handle_cell_click(float world_x, float world_y) {
+	const float size = 8.0f;
+	const float offset_x = 50.0f;
+	const float offset_y = 50.0f;
+	const float sqrt3 = std::sqrt(3.0f);
+
+	// Quitar offset del grid
+	float wx = world_x - offset_x;
+	float wy = world_y - offset_y;
+
+	// Conversión axial fraccional
+	float q = (sqrt3 / 3.0f * wx - 1.0f / 3.0f * wy) / size;
+	float r = (2.0f / 3.0f * wy) / size;
+
+	// Convertir a cube para redondear
+	float x = q;
+	float z = r;
+	float y = -x - z;
+
+	float rx = std::round(x);
+	float ry = std::round(y);
+	float rz = std::round(z);
+
+	float x_diff = std::abs(rx - x);
+	float y_diff = std::abs(ry - y);
+	float z_diff = std::abs(rz - z);
+
+	if (x_diff > y_diff && x_diff > z_diff)
+		rx = -ry - rz;
+	else if (y_diff > z_diff)
+		ry = -rx - rz;
+	else
+		rz = -rx - ry;
+
+	int final_q = static_cast<int>(rx);
+	int final_r = static_cast<int>(rz);
+
+	if (m_automaton.in_bounds(final_q, final_r))
+		m_automaton.toggle(final_q, final_r);
+}
 } // namespace cas

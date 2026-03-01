@@ -4,7 +4,7 @@
 
 namespace cas::platform {
 	Window::Window(std::string_view title, int width, int height) {
-		m_handle = SDL_CreateWindow(title.data(), width, height, 0);
+		m_handle = SDL_CreateWindow(title.data(), width, height, SDL_WINDOW_HIGH_PIXEL_DENSITY);
 
 		if (!m_handle)
 			throw std::runtime_error(SDL_GetError());
@@ -16,6 +16,7 @@ namespace cas::platform {
 	}
 
 	void Window::set_full_screen(bool enabled) {
+		m_is_full_screen = enabled;
 		SDL_SetWindowFullscreen(m_handle, enabled);
 	}
 

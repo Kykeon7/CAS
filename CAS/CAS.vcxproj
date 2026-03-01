@@ -31,9 +31,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h" />
+    <ClInclude Include="event_bus.h" />
+    <ClInclude Include="sim_events.h" />
+    <ClInclude Include="window_events.h" />
     <ClInclude Include="include\application.h" />
     <ClInclude Include="include\automaton\hex_automaton.h" />
-    <ClInclude Include="include\core\event.h" />
+    <ClInclude Include="include\core\input_events.h" />
     <ClInclude Include="include\core\gui_manager.h" />
     <ClInclude Include="include\core\input.h" />
     <ClInclude Include="include\core\input_manger.h" />

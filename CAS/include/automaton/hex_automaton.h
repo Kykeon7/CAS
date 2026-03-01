@@ -15,6 +15,8 @@ public:
 
     void randomize();
     void step();
+    void toggle(int q, int r);
+    bool in_bounds(int q, int r) const;
 
     const HexCell& cell(int q, int r) const;
 

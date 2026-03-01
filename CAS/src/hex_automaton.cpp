@@ -63,3 +63,13 @@ void HexAutomaton::step() {
     for (auto& cell : m_cells)
         cell.alive = cell.next_alive;
 }
+
+void HexAutomaton::toggle(int q, int r) {
+    auto& cell = m_cells[index(q, r)];
+    cell.alive = !cell.alive;
+}
+
+bool HexAutomaton::in_bounds(int q, int r) const {
+    return q >= 0 && q < m_width &&
+        r >= 0 && r < m_height;
+}

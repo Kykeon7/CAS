@@ -20,7 +20,7 @@ public:
 private:
 	SDL_Window* m_handle{};
 
-	bool m_is_full_screen;
+	bool m_is_full_screen = false;
 };
 }
 

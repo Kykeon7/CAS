@@ -1,17 +1,26 @@
 #pragma once
+#include <core/math/vec2.h>
 
-#include <SDL3/SDL_rect.h>
+namespace cas {
 
-struct Camera {
-    float x = 0.0f;
-    float y = 0.0f;
-    float zoom = 1.0f;
+class Camera {
+public:
+    Camera() = default;
 
-    SDL_FPoint world_to_screen(float wx, float wy) const {
-        return {
-            (wx - x) * zoom,
-            (wy - y) * zoom
-        };
-    }
+    void set_position(const Vec2& pos);
+    void move(const Vec2& delta);
+
+    const Vec2& position() const;
+
+    void set_zoom(float zoom);
+    float zoom() const;
+
+    Vec2 world_to_screen(const Vec2& world) const;
+    Vec2 screen_to_world(const Vec2& screen) const;
+
+private:
+    Vec2 m_position{ 0.f, 0.f };
+    float m_zoom{ 1.f };
 };
 
+}

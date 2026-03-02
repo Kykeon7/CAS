@@ -23,6 +23,7 @@ file(GLOB IMGUI_BACKENDS
 add_executable(CAS
     ${PROJECT_SOURCES}
     ${IMGUI_BACKENDS}
+    src/core/camera.cpp  
 )
 
 target_include_directories(CAS PRIVATE

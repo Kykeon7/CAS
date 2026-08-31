@@ -1,28 +1,28 @@
 #include "automaton/hex_automaton.h"
 #include <cstdlib>
 
-HexAutomaton::HexAutomaton(int width, int height)
+hex_automaton::hex_automaton(int width, int height)
     : m_width(width)
     , m_height(height)
     , m_cells(width* height) {
 }
 
-int HexAutomaton::index(int q, int r) const {
+int hex_automaton::index(int q, int r) const {
     return r * m_width + q;
 }
 
-const HexCell& HexAutomaton::cell(int q, int r) const {
+const hex_cell& hex_automaton::cell(int q, int r) const {
     return m_cells[index(q, r)];
 }
 
-void HexAutomaton::randomize() {
+void hex_automaton::randomize() {
     for (auto& cell : m_cells)
         cell.alive = (std::rand() % 2) == 0;
 
     m_generation_count = 0;
 }
 
-int HexAutomaton::alive_neighbors(int q, int r) const {
+int hex_automaton::alive_neighbors(int q, int r) const {
     int count = 0;
 
     for (const auto& [dq, dr] : directions) {
@@ -39,7 +39,7 @@ int HexAutomaton::alive_neighbors(int q, int r) const {
     return count;
 }
 
-void HexAutomaton::step() {
+void hex_automaton::step() {
     m_alive_count = 0;
     m_generation_count++;
 
@@ -64,12 +64,12 @@ void HexAutomaton::step() {
         cell.alive = cell.next_alive;
 }
 
-void HexAutomaton::toggle(int q, int r) {
+void hex_automaton::toggle(int q, int r) {
     auto& cell = m_cells[index(q, r)];
     cell.alive = !cell.alive;
 }
 
-bool HexAutomaton::in_bounds(int q, int r) const {
+bool hex_automaton::in_bounds(int q, int r) const {
     return q >= 0 && q < m_width &&
         r >= 0 && r < m_height;
 }

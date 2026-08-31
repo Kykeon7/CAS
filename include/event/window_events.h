@@ -1,12 +1,14 @@
 #pragma once
 
-namespace cas {
+namespace cas::event {
 
-struct WindowResizedEvent {
+struct WindowResized {
     int width;
     int height;
 };
 
-struct QuitEvent {};
+struct WindowFullScreenToggle {};
+
+struct Quit {};
 
 }

@@ -17,10 +17,10 @@ public:
     Renderer(Renderer&& other) noexcept;
     Renderer& operator=(Renderer&& other) noexcept;
 
-    void set_draw_color(const Color& color);
+    void set_draw_color(const color& color);
     void set_draw_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255);
 
-    void clear(const Color& color);
+    void clear(const color& color);
     void clear(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255);
 
     void present();
@@ -37,7 +37,7 @@ private:
     SDL_Renderer* m_handle{};
     Camera* m_camera = nullptr;
 
-    Color m_draw_color{ 1.f, 1.f, 1.f, 1.f }; // blanco correcto
+    color m_draw_color{ 1.f, 1.f, 1.f, 1.f }; // blanco correcto
 };
 
 }

@@ -1,4 +1,4 @@
-#include "platform/renderer.h"
+#include "core/rendering/renderer.h"
 
 #include <stdexcept>
 #include <cmath>
@@ -41,7 +41,7 @@ Renderer& Renderer::operator=(Renderer&& other) noexcept {
     return *this;
 }
 
-void Renderer::set_draw_color(const Color& color) {
+void Renderer::set_draw_color(const color& color) {
     m_draw_color = color;
 
     auto sdl = to_sdl(color);
@@ -56,17 +56,17 @@ void Renderer::set_draw_color(const Color& color) {
 }
 
 void Renderer::set_draw_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
-    set_draw_color(Color::from_rgba8(r, g, b, a));
+    set_draw_color(color::from_rgba8(r, g, b, a));
 }
 
-void Renderer::clear(const Color& color) {
+void Renderer::clear(const color& color) {
     auto sdl = to_sdl(color);
     SDL_SetRenderDrawColor(m_handle, sdl.r, sdl.g, sdl.b, sdl.a);
     SDL_RenderClear(m_handle);
 }
 
 void Renderer::clear(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
-    clear(Color::from_rgba8(r, g, b, a));
+    clear(color::from_rgba8(r, g, b, a));
 }
 
 void Renderer::present() {
@@ -113,8 +113,7 @@ void Renderer::draw_hex(const Vec2& center, float size) {
 
     SDL_FPoint points[7]{};
 
-    for (int i = 0; i < 6; ++i)
-    {
+    for (int i = 0; i < 6; ++i) {
         float angle = static_cast<float>(std::numbers::pi) / 180.f * (60.f * i - 30.f);
 
         Vec2 world{
@@ -138,8 +137,7 @@ void Renderer::fill_hex(const Vec2& center, float size) {
 
     SDL_FPoint outer[6]{};
 
-    for (int i = 0; i < 6; ++i)
-    {
+    for (int i = 0; i < 6; ++i) {
         float angle = static_cast<float>(std::numbers::pi) / 180.f * (60.f * i - 30.f);
 
         Vec2 world{
@@ -161,8 +159,7 @@ void Renderer::fill_hex(const Vec2& center, float size) {
     vertices[0].color = sdl_color;
     vertices[0].tex_coord = { 0.f, 0.f };
 
-    for (int i = 0; i < 6; ++i)
-    {
+    for (int i = 0; i < 6; ++i) {
         vertices[i + 1].position = outer[i];
         vertices[i + 1].color = sdl_color;
         vertices[i + 1].tex_coord = { 0.f, 0.f };
@@ -170,8 +167,7 @@ void Renderer::fill_hex(const Vec2& center, float size) {
 
     int indices[18]{};
 
-    for (int i = 0; i < 6; ++i)
-    {
+    for (int i = 0; i < 6; ++i) {
         indices[i * 3 + 0] = 0;
         indices[i * 3 + 1] = i + 1;
         indices[i * 3 + 2] = (i == 5) ? 1 : i + 2;

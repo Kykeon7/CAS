@@ -24,7 +24,7 @@ inline ImVec4 to_imgui(const Vec4& v) {
     return ImVec4(v.x, v.y, v.z, v.w);
 }
 
-inline Vec4 from_imgui(const ImVec4& v) {
+inline Vec4 vec4_from_imgui(const ImVec4& v) {
     return Vec4(v.x, v.y, v.z, v.w);
 }
 

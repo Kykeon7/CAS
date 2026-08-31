@@ -3,27 +3,28 @@
 #include <vector>
 #include <array>
 #include <utility>
+#include "bit_array.h"
 
-struct HexCell {
+struct hex_cell {
     bool alive = false;
     bool next_alive = false;
 };
 
-class HexAutomaton {
+class hex_automaton {
 public:
-    HexAutomaton(int width, int height);
+    hex_automaton(int width, int height);
 
     void randomize();
     void step();
     void toggle(int q, int r);
     bool in_bounds(int q, int r) const;
 
-    const HexCell& cell(int q, int r) const;
+    const hex_cell& cell(int q, int r) const;
 
-    int width() const { return m_width; }
-    int height() const { return m_height; }
-    int alive_count() const { return m_alive_count; }
-    int generation_count() const { return m_generation_count; }
+    int width() const noexcept { return m_width; }
+    int height() const noexcept { return m_height; }
+    int alive_count() const noexcept { return m_alive_count; }
+    int generation_count() const noexcept { return m_generation_count; }
 
 private:
     int index(int q, int r) const;
@@ -44,5 +45,5 @@ private:
     int m_alive_count = 0;
     int m_generation_count = 0;
 
-    std::vector<HexCell> m_cells;
+    std::vector<hex_cell> m_cells;
 };

@@ -23,6 +23,10 @@ struct Vec2 {
         return { x * s, y * s };
     }
 
+    constexpr Vec2 operator/(float s) const {
+        return { x / s, y / s };
+    }
+
     constexpr Vec2& operator+=(const Vec2& other) {
         x += other.x;
         y += other.y;

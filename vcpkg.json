@@ -2,7 +2,6 @@
   "name": "cas",
   "version": "1.0.0",
   "dependencies": [
-    "sdl3",
-    "imgui"
+    "sdl3"
   ]
 }

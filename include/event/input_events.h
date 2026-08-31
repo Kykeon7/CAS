@@ -1,22 +1,38 @@
 #pragma once
 
-namespace cas {
+#include "core/math/vec2.h"
 
- struct KeyPressedEvent {
+namespace cas::event {
+
+ struct KeyPressed {
     int key;
     bool repeat;
  };
 
-struct KeyReleasedEvent {
+struct KeyReleased {
     int key;
 };
 
-struct TextInputEvent {
+struct TextInput {
     char character;
 };
 
-struct MouseScrolledEvent {
+struct MouseScrolled {
     float offset;
 };
+
+struct MoveCamera {
+    Vec2 delta;
+};
+
+struct ZoomCamera {
+    float factor;
+    Vec2 mouse_screen_pos;
+};
+
+struct CellClicked {
+    Vec2 screen_pos;
+};
+
 
 } // namespace cas

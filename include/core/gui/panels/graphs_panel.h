@@ -33,7 +33,7 @@ public:
 
     void render_population() {
         auto& history = m_viewport.get().population_history();
-        auto& automaton = m_viewport.get().simulation().automaton();
+        auto& automaton = m_viewport.get().simulation().get_automaton();
 
         if (history.empty()) return;
 

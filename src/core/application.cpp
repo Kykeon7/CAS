@@ -1,6 +1,5 @@
 #include "core/application.h"
 
-#include <print>
 #include <core/time.h>
 #include <core/input/input.h>
 #include <algorithm>
@@ -49,7 +48,7 @@ namespace cas {
         );
 
         add_panel<panels::Stats>("Stats", 
-            m_viewports[0]->simulation().automaton()
+            m_viewports[0]->simulation().get_automaton()
         );
 
         add_panel<panels::Appearance>("Appearance",

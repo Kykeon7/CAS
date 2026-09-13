@@ -10,7 +10,7 @@ public:
 	void step();
 	void randomize();
 
-	automaton& automaton() { return m_automaton; }
+	automaton& get_automaton() { return m_automaton; }
 
 	void set_speed(float speed) { m_speed = speed; }
 	float speed() const { return m_speed; }
@@ -19,14 +19,14 @@ public:
 	void toggle() { m_running = !m_running; }
 	void resize(int width, int height);
 
-	rule rule() const { return m_automaton.rule(); }
+	rule get_rule() const { return m_automaton.get_rule(); }
 
-	void set_rule(const cas::rule& rule) {
+	void set_rule(const cas::rule& rule_value) {
 		m_automaton = cas::automaton(
 			m_automaton.width(),
 			m_automaton.height(),
-			m_automaton.topology(),
-			rule
+			m_automaton.get_topology(),
+			rule_value
 		);
 	}
 

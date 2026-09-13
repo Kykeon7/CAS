@@ -1,0 +1,19 @@
+{
+  "packages": [
+{
+  "SPDXID" : "SPDXRef-resource-0",
+  "checksums" : 
+  [
+    {
+      "algorithm" : "SHA512",
+      "checksumValue" : "72e9ad42a11d64c73f4cd4569115e75790ee7d73c850a1ac00ed453418bb782266e180cc06c2ba0ff205d97ea18d5fa2b23247a8b23ed5cb6edb86e28b94e501"
+    }
+  ],
+  "copyrightText" : "NOASSERTION",
+  "downloadLocation" : "git+https://github.com/libexpat/libexpat@R_2_8_4",
+  "licenseConcluded" : "NOASSERTION",
+  "licenseDeclared" : "NOASSERTION",
+  "name" : "libexpat/libexpat"
+}
+  ]
+}

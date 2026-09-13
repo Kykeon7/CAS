@@ -1,0 +1,4 @@
+/home/alberto/Documents/Semestre2027-2/TT/CAS/build/CMakeFiles/imgui.dir
+/home/alberto/Documents/Semestre2027-2/TT/CAS/build/CMakeFiles/CAS.dir
+/home/alberto/Documents/Semestre2027-2/TT/CAS/build/CMakeFiles/edit_cache.dir
+/home/alberto/Documents/Semestre2027-2/TT/CAS/build/CMakeFiles/rebuild_cache.dir

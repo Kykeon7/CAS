@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include <core/input/input.h>
 #include <core/rendering/renderer.h>
 #include <automaton/topology.h>

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstring>
 #include <core/gui/panels/gui_panel.h>
 #include <core/viewport.h>
 
@@ -76,10 +77,11 @@ public:
 	}
 
 	void open_rule_editor(cas::Simulation& sim) {
-		m_temp_rule = sim.rule();
+		m_temp_rule = sim.get_rule();
 
 		auto text = rules::rule_to_string(m_temp_rule);
-		strncpy_s(m_buffer, text.c_str(), sizeof(m_buffer));
+		std::strncpy(m_buffer, text.c_str(), sizeof(m_buffer) - 1);
+		m_buffer[sizeof(m_buffer) - 1] = '\0';
 
 		ImGui::OpenPopup("Rule Editor");
 	}
@@ -148,7 +150,8 @@ public:
 
 	void sync_rule_buffer() {
 		auto text = rules::rule_to_string(m_temp_rule);
-		strncpy_s(m_buffer, text.c_str(), sizeof(m_buffer));
+		std::strncpy(m_buffer, text.c_str(), sizeof(m_buffer) - 1);
+		m_buffer[sizeof(m_buffer) - 1] = '\0';
 	}
 
 	void render_rule_actions(cas::Simulation& sim) const {

@@ -91,7 +91,7 @@ void Viewport::update_sim(float dt) {
 }
 
 void Viewport::render(platform::Renderer& renderer) {
-	m_renderer->render(renderer, m_simulation.automaton(), m_config);
+	m_renderer->render(renderer, m_simulation.get_automaton(), m_config);
 }
 
 Vec2 Viewport::screen_to_world(const Vec2& local) const {

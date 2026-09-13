@@ -102,8 +102,8 @@ public:
 
     int width() const noexcept { return m_storage.width(); }
     int height() const noexcept { return m_storage.height(); }
-    topology topology() const noexcept { return m_topology; }
-    rule rule() const noexcept { return m_rule; }
+    topology get_topology() const noexcept { return m_topology; }
+    rule get_rule() const noexcept { return m_rule; }
 
     int alive_count() const noexcept { return m_alive_count; }
     int generation_count() const noexcept { return m_generation_count; }

@@ -1,0 +1,189 @@
+Package: vcpkg-cmake-config
+Version: 2026-07-21
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 8d466dac6b00c57578b0ff3ca895ecf856411cf3d05467153e76fd13d21e24fd
+Status: install ok installed
+
+Package: vcpkg-cmake
+Version: 2025-08-07
+Architecture: x64-linux
+Multi-Arch: same
+Abi: d90a2d27eaf2ef65d07ea4b5e5aae3a11ab0c7949572adee491fa968ff7f6fcd
+Status: install ok installed
+
+Package: zstd
+Version: 1.5.7
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-linux
+Multi-Arch: same
+Abi: fe2b586cb036d9524f937132fe33a257ebb2d9051c34b3a80c0dd0bf368bfcbc
+Description: Zstandard - Fast real-time compression algorithm
+Status: install ok installed
+
+Package: vcpkg-cmake-get-vars
+Version: 2025-05-29
+Depends: vcpkg-cmake
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 4dc29079865129c1996799e5d84de3696f69b340f98bf4c80fef04fbf162dd8c
+Status: install ok installed
+
+Package: vcpkg-tool-meson
+Version: 1.9.0
+Port-Version: 10
+Depends: vcpkg-cmake-get-vars
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 930d6a1784a6df1f42ed2ee3eec3542a637f75003ff9fa9f9314117500f8b669
+Description: Meson build system
+Status: install ok installed
+
+Package: vcpkg-get-python-packages
+Version: 2025-04-05
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 9bdfdca7af6132769e3ed1aa4aa2cbc02ce66773920bfe00993a74939364cbe6
+Status: install ok installed
+
+Package: lz4
+Version: 1.10.0
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-linux
+Multi-Arch: same
+Abi: ee88c56918c6b9ba38a0c62a9d06f7405e6bcf8a268a37c844fa486465d5bdc8
+Description: Lossless compression algorithm, providing compression speed at 400 MB/s per core.
+Status: install ok installed
+
+Package: vcpkg-make
+Version: 2026-07-09
+Depends: vcpkg-cmake-get-vars
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 3eee0c7a99b1fa996341b7016d042c6e57bfbd5d1501aa0b87c69740050350c6
+Status: install ok installed
+
+Package: libxcrypt
+Version: 4.5.2
+Depends: vcpkg-make
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 658dbd2c3ed1be8ec577e6646c082271fea9592c5707683d5e745d638ca61be9
+Description: libxcrypt is a modern library for one-way hashing of passwords. On Linux-based systems, by default libxcrypt will be binary backward compatible with the libcrypt.so.1 shipped as part of the GNU C Library.
+Status: install ok installed
+
+Package: libmount
+Version: 2.41.3
+Port-Version: 1
+Depends: vcpkg-make
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 454a631a00e653698ec811d6266858e87fca09c29ab62858b987fa65d8723701
+Description: Block device identification library from util-linux
+Status: install ok installed
+
+Package: liblzma
+Version: 5.8.3
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 65bed60f25a29ef6a00761cce1f01a8f8068307f7900c271b3869481f719fb0e
+Description: Compression library with an API similar to that of zlib.
+Status: install ok installed
+
+Package: libcap
+Version: 2.78
+Depends: libcap, vcpkg-cmake-get-vars, vcpkg-make
+Architecture: x64-linux
+Multi-Arch: same
+Abi: f18eea33b0375ba1907695d92e43ac6dd61aa5898565e74f4cac805d016bc6db
+Description: A library for getting and setting POSIX.1e (formerly POSIX 6) draft 15 capabilities.
+Status: install ok installed
+
+Package: gperf
+Version: 3.3
+Depends: vcpkg-make
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 72293acb0622662c88d010e74dcb8e21f1be0cd86fd00794c3f12e9a4d459d20
+Description: GNU perfect hash function generator
+Status: install ok installed
+
+Package: libsystemd
+Version: 260.2
+Port-Version: 1
+Depends: gperf, libcap, liblzma, libmount, libxcrypt, lz4, vcpkg-get-python-packages, vcpkg-tool-meson, zstd
+Architecture: x64-linux
+Multi-Arch: same
+Abi: dec1cc1e7b55a1b2bd24f8488ee89d354d698dd06b97677235a6faff2aae813e
+Description: System and Service Manager
+Status: install ok installed
+
+Package: expat
+Version: 2.8.4
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-linux
+Multi-Arch: same
+Abi: ce0b39c3714f6018ee989eb4de75c40101561c2636ed0c155e14a0017e3d805c
+Description: XML parser library written in C
+Status: install ok installed
+
+Package: dbus
+Version: 1.16.2
+Port-Version: 5
+Depends: expat, vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-linux
+Multi-Arch: same
+Abi: f2e2ab0edb74e44ac1e3ade0f5ea1236709344f86e79171abf5e3276e9c41158
+Description: D-Bus specification and reference implementation, including libdbus and dbus-daemon
+Default-Features: systemd
+Status: install ok installed
+
+Package: dbus
+Feature: systemd
+Depends: libsystemd
+Architecture: x64-linux
+Multi-Arch: same
+Description: Build with systemd at_console support
+Status: install ok installed
+
+Package: sdl3
+Version: 3.4.16
+Depends: vcpkg-cmake, vcpkg-cmake-config
+Architecture: x64-linux
+Multi-Arch: same
+Abi: 180273986370e52d10379ab0be518f693c3d3f505864431bcc2c5f67849a9c05
+Description: Simple DirectMedia Layer is a cross-platform development library designed to provide low level access to audio, keyboard, mouse, joystick, and graphics hardware via OpenGL and Direct3D.
+Default-Features: ibus, wayland, x11
+Status: install ok installed
+
+Package: sdl3
+Feature: dbus
+Depends: dbus
+Architecture: x64-linux
+Multi-Arch: same
+Description: Build with D-Bus support
+Status: install ok installed
+
+Package: sdl3
+Feature: ibus
+Depends: sdl3
+Architecture: x64-linux
+Multi-Arch: same
+Description: Build with ibus IME support
+Status: install ok installed
+
+Package: sdl3
+Feature: wayland
+Architecture: x64-linux
+Multi-Arch: same
+Description: Build with Wayland support
+Status: install ok installed
+
+Package: sdl3
+Feature: x11
+Architecture: x64-linux
+Multi-Arch: same
+Description: Build with X11 support
+Status: install ok installed
+

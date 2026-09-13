@@ -41,6 +41,10 @@ target_link_libraries(imgui PUBLIC
     SDL3::SDL3
 )
 
+target_compile_definitions(imgui PUBLIC
+    SDL_ENABLE_OLD_NAMES
+)
+
 
 # ============================================================
 # CAS

@@ -1,6 +1,6 @@
 #include "application.h"
 
-#include <print>
+#include <iostream>
 
 int main(int argc, char* argv[]) {
 
@@ -9,9 +9,8 @@ int main(int argc, char* argv[]) {
         app.run();
     }
     catch (const std::exception& e) {
-        std::println("{}", e.what());
+        std::cerr << e.what() << '\n';
     }
-   
 
     return 0;
 }

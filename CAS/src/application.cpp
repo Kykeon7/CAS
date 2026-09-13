@@ -1,10 +1,9 @@
 #include "application.h"	
 
-#include <print>
 #include <core/time.h>
 #include <core/input.h>
 #include <algorithm>
-
+#include <cmath>
 
 namespace cas {
 
@@ -110,7 +109,7 @@ void Application::process_events() {
 
 			m_camera.zoom = std::clamp(m_camera.zoom, 0.1f, 10.0f);
 
-			// Reajustar cámara para centrar zoom en cursor
+			// Reajustar cï¿½mara para centrar zoom en cursor
 			m_camera.x = world_x - mouse_x / m_camera.zoom;
 			m_camera.y = world_y - mouse_y / m_camera.zoom;
 		}
@@ -318,7 +317,7 @@ void Application::handle_cell_click(float world_x, float world_y) {
 	float wx = world_x - offset_x;
 	float wy = world_y - offset_y;
 
-	// Conversión axial fraccional
+	// Conversiï¿½n axial fraccional
 	float q = (sqrt3 / 3.0f * wx - 1.0f / 3.0f * wy) / size;
 	float r = (2.0f / 3.0f * wy) / size;
 

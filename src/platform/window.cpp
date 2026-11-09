@@ -1,28 +1,60 @@
 #include "platform/window.h"
 
 #include <stdexcept>
+#include <SDL3/SDL.h>
 
 namespace cas::platform {
-	Window::Window(std::string_view title, int width, int height) {
-		m_handle = SDL_CreateWindow(
-			title.data(),
-			width, height,
-			SDL_WINDOW_HIGH_PIXEL_DENSITY |
-			SDL_WINDOW_RESIZABLE
-		);
 
-		if (!m_handle)
-			throw std::runtime_error(SDL_GetError());
-	}
+window::window(std::string_view title) {
+    const std::string title_string(title);
 
-	Window::~Window() {
-		if (m_handle)
-			SDL_DestroyWindow(m_handle);
-	}
+    _handle = SDL_CreateWindow(
+        title_string.c_str(),
+        1280,
+        800,
+        SDL_WINDOW_HIGH_PIXEL_DENSITY |
+        SDL_WINDOW_RESIZABLE |
+        SDL_WINDOW_MAXIMIZED
+    );
 
-	void Window::set_full_screen(bool enabled) {
-		m_is_full_screen = enabled;
-		SDL_SetWindowFullscreen(m_handle, enabled);
-	}
+    if (!_handle)
+        throw std::runtime_error(SDL_GetError());
+}
+
+window::window(
+    std::string_view title,
+    int width,
+    int height
+) {
+    _handle = SDL_CreateWindow(
+        title.data(),
+        width,
+        height,
+        SDL_WINDOW_HIGH_PIXEL_DENSITY |
+        SDL_WINDOW_RESIZABLE
+    );
+
+    if (!_handle)
+        throw std::runtime_error(SDL_GetError());
+}
+
+window::~window() {
+    if (_handle)
+        SDL_DestroyWindow(_handle);
+}
+
+void window::set_title(std::string_view title) {
+    const std::string title_string(title);
+
+    if (!SDL_SetWindowTitle(_handle, title_string.c_str()))
+        throw std::runtime_error(SDL_GetError());
+}
+
+void window::set_full_screen(bool enabled) {
+    if (!SDL_SetWindowFullscreen(_handle, enabled))
+        throw std::runtime_error(SDL_GetError());
+
+    _is_full_screen = enabled;
+}
 
 }

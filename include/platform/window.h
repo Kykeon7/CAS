@@ -1,26 +1,30 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include <SDL3/SDL.h>
 
 namespace cas::platform {
-class Window {
+
+class window {
 public:
-	Window(std::string_view title, int width, int height);
-	~Window();
+    explicit window(std::string_view title);
+    window(std::string_view title, int width, int height);
 
-	Window(const Window&) = delete;
-	Window& operator=(const Window&) = delete;
+    ~window();
 
-	void set_full_screen(bool enabled);
+    window(const window&) = delete;
+    window& operator=(const window&) = delete;
 
-	SDL_Window* native() const { return m_handle; }
-	bool is_full_screen() const { return m_is_full_screen; }
+    void set_full_screen(bool enabled);
+    void set_title(std::string_view title);
+
+    SDL_Window* native() const { return _handle; }
+    bool is_full_screen() const { return _is_full_screen; }
 
 private:
-	SDL_Window* m_handle{};
-	bool m_is_full_screen = false;
+    SDL_Window* _handle{};
+    bool _is_full_screen = false;
 };
+
 }
-
-

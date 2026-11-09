@@ -1,24 +1,58 @@
 #pragma once
-#include <unordered_map>
-#include <string>
+
+#include <array>
 #include <chrono>
+#include <cstddef>
 
 namespace cas::system {
 
-class Profiler {
-public:
-    static Profiler& instance();
+enum class profile_id {
+    update,
+    render,
+    traversal,
+    coordinate_transform,
+    batch_generator,
+    geometry_render,
+    run,
 
-    void begin(const std::string& name);
-    void end(const std::string& name);
-
-    float get_ms(const std::string& name) const;
-
-private:
-    using Clock = std::chrono::high_resolution_clock;
-
-    std::unordered_map<std::string, Clock::time_point> m_start;
-    std::unordered_map<std::string, float> m_times;
+    count
 };
 
-} // namespace cas::system
+class profiler {
+public:
+    static profiler& instance();
+
+    bool begin(profile_id id);
+    void end(profile_id id);
+
+    void set_sample_limit(
+        profile_id id,
+        std::size_t limit
+    );
+
+    float get_ms(profile_id id) const;
+    float get_average_ms(profile_id id) const;
+
+    std::size_t get_sample_count(
+        profile_id id
+    ) const;
+
+private:
+    using clock = std::chrono::steady_clock;
+
+    struct profile_data {
+        clock::time_point start{};
+        float last_ms{ 0.0f };
+        float total_ms{ 0.0f };
+        std::size_t sample_count{ 0 };
+        std::size_t sample_limit{ 0 };
+    };
+
+    static constexpr std::size_t profile_count =
+        static_cast<std::size_t>(profile_id::count);
+
+    std::array<profile_data, profile_count> _profiles{};
+};
+
+}
+

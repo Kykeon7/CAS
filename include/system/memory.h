@@ -1,18 +1,14 @@
+
 #pragma once
 
-#include <windows.h>
-#include <psapi.h>
+#include <cstddef>
 
 namespace cas::system {
 
-size_t get_memory_usage_bytes() {
-    PROCESS_MEMORY_COUNTERS info;
-    GetProcessMemoryInfo(GetCurrentProcess(), &info, sizeof(info));
-    return info.WorkingSetSize;
-}		
+std::size_t get_memory_usage_bytes();
+float get_memory_usage_mb();
 
-float get_memory_usage_mb() {
-    return get_memory_usage_bytes() / (1024.0f * 1024.0f);
-}
+std::size_t get_private_usage_bytes();
+float get_private_usage_mb();
 
 } // namespace cas::system

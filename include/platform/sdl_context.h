@@ -2,17 +2,17 @@
 
 #include <SDL3/SDL.h>
 
-namespace cas {
+namespace cas::platform {
 
-class SDLContext {
+class sdl_context {
 public:
-	explicit SDLContext(Uint32 flags);
-	~SDLContext();
+	explicit sdl_context(Uint32 flags);
+	~sdl_context();
 
-	SDLContext(const SDLContext&) = delete;
-	SDLContext& operator=(const SDLContext&) = delete;
+	sdl_context(const sdl_context&) = delete;
+	sdl_context& operator=(const sdl_context&) = delete;
 private:
-	Uint32 m_flags;
+	Uint32 _flags;
 };
 
-}
+} // namespace cas::platform

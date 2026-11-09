@@ -1,0 +1,17 @@
+#pragma once
+
+namespace cas::math {
+
+struct vec4 {
+    float x{ 0.0f };
+    float y{ 0.0f };
+    float z{ 0.0f };
+    float w{ 0.0f };
+
+    constexpr vec4() = default;
+    constexpr vec4(float x_, float y_, float z_, float w_)
+        : x(x_), y(y_), z(z_), w(w_) {
+    }
+};
+
+} // namespace cas

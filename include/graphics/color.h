@@ -66,6 +66,7 @@ struct color {
 
         return from_rgba8(r, g, b, a);
     }
+
 };
 
 } // namespace cas::graphics

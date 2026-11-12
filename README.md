@@ -1,18 +1,20 @@
 # CAS — Cellular Automaton Simulator
 
-Simulador de autómata celular desarrollado en C++23 utilizando SDL3 e ImGui.  
-El proyecto utiliza CMake y vcpkg para garantizar portabilidad y reproducibilidad en Windows y Linux.
+Simulador de autómata celular desarrollado en C++23 utilizando SDL3, Dear ImGui e ImPlot.
+
+El proyecto utiliza CMake y vcpkg para gestionar la compilación y las dependencias externas, buscando ofrecer portabilidad y reproducibilidad en Windows y Linux.
 
 ---
 
 ## ✨ Características
 
-- Autómata celular hexagonal
-- Renderizado con SDL3
-- Interfaz gráfica con ImGui
-- Arquitectura modular (core / automaton / event)
-- Sistema de build multiplataforma con CMake
-- Gestión de dependencias con vcpkg
+- Autómata celular hexagonal.
+- Renderizado mediante SDL3 GPU.
+- Interfaz gráfica con Dear ImGui.
+- Visualización de datos y gráficas mediante ImPlot.
+- Arquitectura modular.
+- Sistema de compilación multiplataforma con CMake.
+- Gestión de dependencias externas mediante vcpkg.
 
 ---
 
@@ -20,18 +22,29 @@ El proyecto utiliza CMake y vcpkg para garantizar portabilidad y reproducibilida
 
 - Git
 - CMake 3.21+
-- Compilador compatible con C++23
+- Compilador compatible con C++23:
   - MSVC (Windows)
   - GCC 12+ (Linux)
   - Clang 15+
-- Ninja (recomendado)
-- vcpkg
+- Ninja (recomendado).
+- vcpkg.
+
+### Dependencias
+
+| Dependencia | Gestión |
+|---|---|
+| SDL3 | vcpkg |
+| nlohmann_json | vcpkg |
+| Dear ImGui | Incluida en `external/imgui` |
+| ImPlot | Incluida en `external/implot` |
+
+Dear ImGui e ImPlot se compilan directamente desde el código fuente incluido en el repositorio. No es necesario instalarlos mediante vcpkg.
 
 ---
 
-# 🪟 Windows (VSCode o Terminal)
+# 🪟 Windows (VS Code o terminal)
 
-## 1️⃣ Clonar el repositorio
+## 1. Clonar el repositorio
 
 ```bash
 git clone https://github.com/TU_USUARIO/CAS.git
@@ -39,9 +52,9 @@ cd CAS
 git checkout cmake-migration
 ```
 
----
+## 2. Instalar vcpkg
 
-## 2️⃣ Instalar vcpkg (si no está instalado)
+Si todavía no está instalado:
 
 ```powershell
 git clone https://github.com/microsoft/vcpkg.git
@@ -49,62 +62,68 @@ cd vcpkg
 .\bootstrap-vcpkg.bat
 ```
 
-Opcional: configurar variable de entorno
+Configurar la variable de entorno `VCPKG_ROOT`:
 
 ```powershell
 setx VCPKG_ROOT "C:\ruta\a\vcpkg"
 ```
 
----
+Después de configurar la variable, abrir una terminal nueva.
 
-## 3️⃣ Configurar el proyecto
+## 3. Configurar el proyecto
 
-```bash
-cmake -B build -S . ^
-  -DCMAKE_TOOLCHAIN_FILE=C:/ruta/a/vcpkg/scripts/buildsystems/vcpkg.cmake ^
-  -G Ninja
+```powershell
+cmake -B build -S . -G Ninja `
+  -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" `
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo
 ```
 
----
+## 4. Compilar
 
-## 4️⃣ Compilar
-
-```bash
+```powershell
 cmake --build build
 ```
 
----
+## 5. Ejecutar
 
-## 5️⃣ Ejecutar
-
-```bash
-./build/CAS.exe
+```powershell
+.\build\CAS.exe
 ```
 
 ---
 
-# 🐧 Linux (Ubuntu ejemplo)
+# 🐧 Linux (Ubuntu)
 
-## 1️⃣ Instalar dependencias base
+## 1. Instalar dependencias base
 
 ```bash
-sudo apt install build-essential ninja-build git curl zip unzip tar
+sudo apt update
+sudo apt install build-essential ninja-build cmake git curl zip unzip tar pkg-config
 ```
 
----
-
-## 2️⃣ Instalar vcpkg
+## 2. Instalar vcpkg
 
 ```bash
-git clone https://github.com/microsoft/vcpkg.git
-cd vcpkg
+git clone https://github.com/microsoft/vcpkg.git "$HOME/vcpkg"
+
+cd "$HOME/vcpkg"
+
 ./bootstrap-vcpkg.sh
-export VCPKG_ROOT=$HOME/vcpkg
 ```
 
----
+Configurar la variable de entorno:
 
-## 3️⃣ Clonar el proyecto
+```bash
+export VCPKG_ROOT="$HOME/vcpkg"
+```
+
+Para conservarla entre sesiones, agregarla al archivo de configuración del shell, por ejemplo `~/.bashrc`:
+
+```bash
+echo 'export VCPKG_ROOT="$HOME/vcpkg"' >> ~/.bashrc
+```
+
+## 3. Clonar el repositorio
 
 ```bash
 git clone https://github.com/TU_USUARIO/CAS.git
@@ -112,27 +131,21 @@ cd CAS
 git checkout cmake-migration
 ```
 
----
-
-## 4️⃣ Configurar
+## 4. Configurar el proyecto
 
 ```bash
-cmake -B build -S . \
-  -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake \
-  -G Ninja
+cmake -B build -S . -G Ninja \
+  -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo
 ```
 
----
-
-## 5️⃣ Compilar
+## 5. Compilar
 
 ```bash
 cmake --build build
 ```
 
----
-
-## 6️⃣ Ejecutar
+## 6. Ejecutar
 
 ```bash
 ./build/CAS
@@ -142,14 +155,14 @@ cmake --build build
 
 # 🏗 Estructura del proyecto
 
-```
+```text
 CAS/
 ├── CMakeLists.txt
 ├── vcpkg.json
+├── external/
+│   ├── imgui/
+│   └── implot/
 ├── include/
-│   ├── automaton/
-│   ├── core/
-│   └── event/
 └── src/
 ```
 
@@ -157,8 +170,8 @@ CAS/
 
 # 🔀 Ramas
 
-- `main` → Versión original basada en Visual Studio (.sln)
-- `cmake-migration` → Versión multiplataforma basada en CMake
+- `main` → Versión original basada en Visual Studio (.sln).
+- `cmake-migration` → Versión multiplataforma basada en CMake.
 
 ---
 
@@ -166,12 +179,23 @@ CAS/
 
 El proyecto utiliza:
 
-- SDL3
-- ImGui
-- CMake (modo moderno basado en targets)
-- vcpkg en modo manifest
+- **C++23** como estándar del lenguaje.
+- **SDL3** para la gestión de ventanas, eventos y renderizado GPU.
+- **Dear ImGui** para la interfaz gráfica.
+- **ImPlot** para la visualización de gráficas.
+- **nlohmann_json** para el manejo de datos JSON.
+- **CMake** para la configuración y generación del sistema de compilación.
+- **vcpkg** para la gestión de dependencias externas.
 
-El build es completamente reproducible en cualquier sistema compatible.
+### Configuraciones de compilación
+
+| Configuración | Optimización | Símbolos de depuración |
+|---|---|---|
+| Debug | Desactivada | Sí |
+| RelWithDebInfo | Activada | Sí |
+| Release | Activada | No |
+
+Se recomienda utilizar `RelWithDebInfo` durante el desarrollo para aprovechar las optimizaciones del compilador sin perder los símbolos de depuración.
 
 ---
 

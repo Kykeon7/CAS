@@ -40,34 +40,31 @@ void rule_editor::render(cas::simulations::simulation& sim) {
 std::string rule_editor::rule_display_name(
     const automata::rules::rule& current
 ) const {
-    if (dynamic_cast<const class automata::rules::spiral*>(&current)) {
+    if (dynamic_cast<const class automata::rules::spiral*>(&current)) 
         return "Spiral";
-    }
 
-    if (dynamic_cast<const class automata::rules::rule_22_majority_memory*>(&current)) {
+    if (dynamic_cast<const class automata::rules::beehive*>(&current))
+        return "Beehive";
+
+    if (dynamic_cast<const class automata::rules::rule_22_majority_memory*>(&current)) 
         return "Rule 22 (Majority Memory)";
-    }
-
+    
     if (const auto* binary =
         dynamic_cast<const automata::rules::binary*>(&current)) {
         const auto notation = automata::rules::rule_to_string(*binary);
 
-        if (notation == "B3/S23") {
+        if (notation == "B3/S23") 
             return "Game of Life";
-        }
-
-        if (notation == "B36/S23") {
+        
+        if (notation == "B36/S23") 
             return "HighLife";
-        }
-
-        if (notation == "B2/S") {
+        
+        if (notation == "B2/S") 
             return "Seeds";
-        }
 
-        if (notation == "B3/S012345678") {
+        if (notation == "B3/S012345678") 
             return "Beehive";
-        }
-
+        
         return "Custom Binary Rule";
     }
 

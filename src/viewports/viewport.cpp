@@ -39,15 +39,38 @@ void viewport::handle_input(
     if (input.is_mouse_pressed(inputs::mouse_button::left)) {
         const math::vec2f world = screen_to_world(local);
 
-        const auto [q, r] = _layout.world_to_hex(
-            world.x,
-            world.y,
-            _config.cell_size,
-            _config.offset.x,
-            _config.offset.y
-        );
+        const auto& automaton = _simulation.automaton();
 
-        _simulation.cycle_cell_state_axial(q, r);
+        if (automaton.topology().is_linear()) {
+            if (_config.cell_size > 0.0f) {
+                const float cell_x =
+                    (world.x - _config.offset.x) / _config.cell_size +
+                    automaton.width() * 0.5f;
+
+                const float cell_index = std::floor(cell_x + 0.5f);
+
+                if (
+                    cell_index >= 0.0f &&
+                    cell_index < automaton.width()
+                    ) {
+                    _simulation.cycle_cell_state(
+                        static_cast<int>(cell_index),
+                        0
+                    );
+                }
+            }
+        }
+        else {
+            const auto [q, r] = _layout.world_to_hex(
+                world.x,
+                world.y,
+                _config.cell_size,
+                _config.offset.x,
+                _config.offset.y
+            );
+
+            _simulation.cycle_cell_state_axial(q, r);
+        }
     }
 
     if (input.is_mouse_held(inputs::mouse_button::right)) {

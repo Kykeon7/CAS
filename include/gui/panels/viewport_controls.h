@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <imgui.h>
@@ -7,7 +8,7 @@
 namespace cas::gui::panels {
 
 /**
- * @brief Renders the viewport zoom and position controls.
+ * @brief Renders viewport information and camera controls.
  *
  * @param viewport Viewport whose camera controls will be modified.
  */
@@ -25,13 +26,31 @@ inline void render_zoom_controls(cas::viewports::viewport& viewport) {
         reset_position_width +
         spacing * 3.0f;
 
-    const float available_width =
-        ImGui::GetContentRegionAvail().x;
+    const float start_x = ImGui::GetCursorPosX();
+    const float available_width = ImGui::GetContentRegionAvail().x;
 
-    ImGui::SetCursorPosX(
-        ImGui::GetCursorPosX() +
-        available_width - controls_width
+    const auto& camera = viewport.camera();
+    const auto& position = camera.position();
+    const auto& size = camera.viewport_size();
+
+    ImGui::AlignTextToFramePadding();
+
+    ImGui::TextDisabled(
+        "Zoom: %.0f%%  |  Camera: %.1f, %.1f  |  Size: %d x %d px",
+        camera.zoom() * 100.0f,
+        position.x,
+        position.y,
+        size.x,
+        size.y
     );
+
+    const float controls_x =
+        start_x + available_width - controls_width;
+
+    if (controls_x > ImGui::GetCursorPosX() + spacing)
+        ImGui::SetCursorPosX(controls_x);
+    else
+        ImGui::NewLine();
 
     if (ImGui::Button(
         "-##zoom_out",

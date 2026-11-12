@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <string>
 
 #include <application/settings.h>
@@ -177,6 +178,177 @@ void draw_state_count(
     ImGui::Dummy(size);
 }
 
+/// @brief Begins a two-column statistics table.
+[[nodiscard]]
+bool begin_stats_table(const char* id) {
+    if (!ImGui::BeginTable(
+        id,
+        2,
+        ImGuiTableFlags_SizingStretchProp |
+        ImGuiTableFlags_NoSavedSettings
+    ))
+        return false;
+
+    ImGui::TableSetupColumn(
+        "##label",
+        ImGuiTableColumnFlags_WidthStretch,
+        0.55f
+    );
+
+    ImGui::TableSetupColumn(
+        "##value",
+        ImGuiTableColumnFlags_WidthStretch,
+        0.45f
+    );
+
+    return true;
+}
+
+/// @brief Begins a statistics row and positions the cursor in its value column.
+void draw_stat_label(
+    const char* label,
+    const ImVec4& color,
+    bool indented = false
+) {
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+
+    if (indented)
+        ImGui::Indent(12.0f);
+
+    ImGui::TextColored(color, "%s", label);
+
+    if (indented)
+        ImGui::Unindent(12.0f);
+
+    ImGui::TableSetColumnIndex(1);
+}
+
+/// @brief Draws GPU diagnostics when the required information is available.
+void draw_gpu_stats(
+    cas::rendering::context& rendering_context,
+    const ImVec4& label_color,
+    const ImVec4& value_color
+) {
+    if (!rendering_context.is_gpu_backend()) {
+        ImGui::Text("GPU backend not active.");
+        return;
+    }
+
+    const auto* device = rendering_context.gpu_device();
+
+    if (!device) {
+        ImGui::Text("GPU device unavailable.");
+        return;
+    }
+
+    const char* device_name = device->name();
+
+    if (!device_name) {
+        ImGui::Text("GPU device name unavailable.");
+        return;
+    }
+
+    const auto memory = cas::system::get_gpu_memory_info(device_name);
+
+    if (!memory.available) {
+        ImGui::Text("GPU memory information unavailable.");
+        return;
+    }
+
+    if (!begin_stats_table("##gpu"))
+        return;
+
+    constexpr double bytes_to_gib =
+        1.0 / (1024.0 * 1024.0 * 1024.0);
+
+    draw_stat_label("Device:", label_color);
+    ImGui::TextColored(value_color, "%s", device_name);
+
+    draw_stat_label("Dedicated Capacity:", label_color);
+    ImGui::TextColored(
+        value_color,
+        "%.2f GiB",
+        memory.dedicated_capacity_bytes * bytes_to_gib
+    );
+
+    draw_stat_label("Shared Capacity:", label_color);
+    ImGui::TextColored(
+        value_color,
+        "%.2f GiB",
+        memory.shared_capacity_bytes * bytes_to_gib
+    );
+
+    draw_stat_label("Local Usage:", label_color);
+    ImGui::TextColored(
+        get_memory_color(
+            memory.local_used_bytes,
+            memory.local_budget_bytes
+        ),
+        "%.2f GiB",
+        memory.local_used_bytes * bytes_to_gib
+    );
+
+    draw_memory_bar(
+        memory.local_used_bytes,
+        memory.local_budget_bytes
+    );
+
+    draw_stat_label("Local Budget:", label_color);
+    ImGui::TextColored(
+        value_color,
+        "%.2f GiB",
+        memory.local_budget_bytes * bytes_to_gib
+    );
+
+    draw_stat_label("Non-local Usage:", label_color);
+    ImGui::TextColored(
+        get_memory_color(
+            memory.non_local_used_bytes,
+            memory.non_local_budget_bytes
+        ),
+        "%.2f GiB",
+        memory.non_local_used_bytes * bytes_to_gib
+    );
+
+    draw_memory_bar(
+        memory.non_local_used_bytes,
+        memory.non_local_budget_bytes
+    );
+
+    draw_stat_label("Non-local Budget:", label_color);
+    ImGui::TextColored(
+        value_color,
+        "%.2f GiB",
+        memory.non_local_budget_bytes * bytes_to_gib
+    );
+
+    ImGui::EndTable();
+}
+
+/// @brief Draws a population density bar.
+void draw_population_density_bar(double density) {
+    const float progress = static_cast<float>(
+        std::clamp(density, 0.0, 1.0)
+        );
+
+    const auto color = cas::gui::to_imgui(
+        density >= 0.90 ? cas::graphics::red :
+        density >= 0.70 ? cas::graphics::yellow :
+        cas::graphics::green
+    );
+
+    ImGui::PushStyleColor(ImGuiCol_PlotHistogram, color);
+
+    ImGui::ProgressBar(
+        progress,
+        ImVec2(-1.0f, 6.0f),
+        ""
+    );
+
+    ImGui::PopStyleColor();
+}
+
 } // namespace
 namespace cas::gui::panels {
 
@@ -203,49 +375,45 @@ void stats::render() {
 
         ImGui::Text("Performance");
 
-        const double delta_time =
-            time::instance().unscaled_delta_time();
+        if (begin_stats_table("##performance")) {
+            const double delta_time =
+                time::instance().unscaled_delta_time();
 
-        const double fps =
-            delta_time > 0.0 ? 1.0 / delta_time : 0.0;
+            const double fps =
+                delta_time > 0.0 ? 1.0 / delta_time : 0.0;
 
-        const auto fps_color = to_imgui(
-            fps <= 20.0 ? graphics::red :
-            fps < 60.0 ? graphics::yellow :
-            graphics::green
-        );
+            const auto fps_color = to_imgui(
+                fps <= 20.0 ? graphics::red :
+                fps < 60.0 ? graphics::yellow :
+                graphics::green
+            );
 
-        ImGui::TextColored(label_color, "FPS:");
-        ImGui::SameLine();
-        ImGui::TextColored(fps_color, "%.1f", fps);
+            draw_stat_label("FPS:", label_color);
+            ImGui::TextColored(fps_color, "%.1f", fps);
 
-        ImGui::TextColored(label_color, "Frame Time:");
-        ImGui::SameLine();
-        ImGui::TextColored(
-            value_color,
-            "%.2f ms",
-            profiler.get_ms(system::profile_id::run)
-        );
+            draw_stat_label("Frame Time:", label_color);
+            ImGui::TextColored(
+                value_color,
+                "%.2f ms",
+                profiler.get_ms(system::profile_id::run)
+            );
 
-        ImGui::Indent(12.0f);
+            draw_stat_label("Simulation Time:", label_color, true);
+            ImGui::TextColored(
+                value_color,
+                "%.2f ms",
+                profiler.get_ms(system::profile_id::update)
+            );
 
-        ImGui::TextColored(label_color, "Simulation Time:");
-        ImGui::SameLine();
-        ImGui::TextColored(
-            value_color,
-            "%.2f ms",
-            profiler.get_ms(system::profile_id::update)
-        );
+            draw_stat_label("Render Time:", label_color, true);
+            ImGui::TextColored(
+                value_color,
+                "%.2f ms",
+                profiler.get_ms(system::profile_id::render)
+            );
 
-        ImGui::TextColored(label_color, "Render Time:");
-        ImGui::SameLine();
-        ImGui::TextColored(
-            value_color,
-            "%.2f ms",
-            profiler.get_ms(system::profile_id::render)
-        );
-
-        ImGui::Unindent(12.0f);
+            ImGui::EndTable();
+        }
 
         ImGui::Separator();
     }
@@ -253,21 +421,23 @@ void stats::render() {
     if (_settings.show_memory) {
         ImGui::Text("Memory");
 
-        ImGui::TextColored(label_color, "Process Memory:");
-        ImGui::SameLine();
-        ImGui::TextColored(
-            value_color,
-            "%.2f MB",
-            system::get_memory_usage_mb()
-        );
+        if (begin_stats_table("##memory")) {
+            draw_stat_label("Process Memory:", label_color);
+            ImGui::TextColored(
+                value_color,
+                "%.2f MB",
+                system::get_memory_usage_mb()
+            );
 
-        ImGui::TextColored(label_color, "Private Memory:");
-        ImGui::SameLine();
-        ImGui::TextColored(
-            value_color,
-            "%.2f MB",
-            system::get_private_usage_mb()
-        );
+            draw_stat_label("Private Memory:", label_color);
+            ImGui::TextColored(
+                value_color,
+                "%.2f MB",
+                system::get_private_usage_mb()
+            );
+
+            ImGui::EndTable();
+        }
 
         ImGui::Separator();
     }
@@ -278,45 +448,78 @@ void stats::render() {
 
         ImGui::Text("Simulation");
 
-        ImGui::TextColored(label_color, "Generation:");
-        ImGui::SameLine();
-        ImGui::TextColored(
-            value_color,
-            "%d",
-            automaton.generation_count()
-        );
-
-        std::int64_t total_cells = 0;
-
-        for (int state = 0; state < automaton.rule().state_count(); ++state)
-            total_cells += automaton.state_count(state);
-
-        ImGui::TextColored(label_color, "Total Cells:");
-        ImGui::SameLine();
-        ImGui::TextColored(
-            value_color,
-            "%lld",
-            static_cast<long long>(total_cells)
-        );
-
-        for (int state = 0; state < automaton.rule().state_count(); ++state) {
-            const auto state_color =
-                state == 0 ? config.background_color :
-                state == 1 ? config.alive_color :
-                config.persistent_color;
-
+        if (begin_stats_table("##simulation")) {
+            draw_stat_label("Generation:", label_color);
             ImGui::TextColored(
-                label_color,
-                "State %d Cells:",
-                state
+                value_color,
+                "%d",
+                automaton.generation_count()
             );
 
-            ImGui::SameLine();
+            std::int64_t total_cells = 0;
+            std::int64_t active_cells = 0;
 
-            draw_state_count(
-                automaton.state_count(state),
-                state_color
+            for (int state = 0; state < automaton.rule().state_count(); ++state) {
+                const auto state_count = automaton.state_count(state);
+
+                total_cells += state_count;
+
+                if (state != 0)
+                    active_cells += state_count;
+            }
+
+            draw_stat_label("Total Cells:", label_color);
+            ImGui::TextColored(
+                value_color,
+                "%lld",
+                static_cast<long long>(total_cells)
             );
+
+            for (int state = 0; state < automaton.rule().state_count(); ++state) {
+                const auto state_color =
+                    state == 0 ? config.background_color :
+                    state == 1 ? config.alive_color :
+                    config.persistent_color;
+
+                char label[32];
+                std::snprintf(
+                    label,
+                    sizeof(label),
+                    "State %d Cells:",
+                    state
+                );
+
+                draw_stat_label(label, label_color);
+
+                draw_state_count(
+                    automaton.state_count(state),
+                    state_color
+                );
+            }
+
+            draw_stat_label("Active Cells:", label_color);
+            ImGui::TextColored(
+                value_color,
+                "%lld",
+                static_cast<long long>(active_cells)
+            );
+
+            const double population_density =
+                total_cells > 0
+                ? static_cast<double>(active_cells) /
+                static_cast<double>(total_cells)
+                : 0.0;
+
+            draw_stat_label("Population Density:", label_color);
+            ImGui::TextColored(
+                get_memory_color(active_cells, total_cells),
+                "%.1f%%",
+                population_density * 100.0
+            );
+
+            ImGui::EndTable();
+
+            draw_population_density_bar(population_density);
         }
 
         ImGui::Separator();
@@ -325,109 +528,10 @@ void stats::render() {
     if (_settings.show_gpu) {
         ImGui::Text("GPU");
 
-        if (!_rendering_context.is_gpu_backend()) {
-            ImGui::Text("GPU backend not active.");
-            ImGui::Separator();
-            return;
-        }
-
-        const auto* device = _rendering_context.gpu_device();
-
-        if (!device) {
-            ImGui::Text("GPU device unavailable.");
-            ImGui::Separator();
-            return;
-        }
-
-        const char* device_name = device->name();
-
-        if (!device_name) {
-            ImGui::Text("GPU device name unavailable.");
-            ImGui::Separator();
-            return;
-        }
-
-        ImGui::TextColored(label_color, "Device:");
-        ImGui::SameLine();
-        ImGui::TextColored(value_color, "%s", device_name);
-
-        const auto memory = system::get_gpu_memory_info(device_name);
-
-        if (!memory.available) {
-            ImGui::Text("GPU memory information unavailable.");
-            ImGui::Separator();
-            return;
-        }
-
-        constexpr double bytes_to_gib =
-            1.0 / (1024.0 * 1024.0 * 1024.0);
-
-        ImGui::Separator();
-
-        ImGui::TextColored(label_color, "Dedicated Memory Capacity:");
-        ImGui::SameLine();
-        ImGui::TextColored(
-            value_color,
-            "%.2f GiB",
-            memory.dedicated_capacity_bytes * bytes_to_gib
-        );
-
-        ImGui::TextColored(label_color, "Shared Memory Capacity:");
-        ImGui::SameLine();
-        ImGui::TextColored(
-            value_color,
-            "%.2f GiB",
-            memory.shared_capacity_bytes * bytes_to_gib
-        );
-
-        ImGui::Separator();
-
-        ImGui::TextColored(label_color, "Local Memory Usage:");
-        ImGui::SameLine();
-        ImGui::TextColored(
-            get_memory_color(
-                memory.local_used_bytes,
-                memory.local_budget_bytes
-            ),
-            "%.2f GiB",
-            memory.local_used_bytes* bytes_to_gib
-        );
-
-        draw_memory_bar(
-            memory.local_used_bytes,
-            memory.local_budget_bytes
-        );
-
-        ImGui::TextColored(label_color, "Local Memory Budget:");
-        ImGui::SameLine();
-        ImGui::TextColored(
-            value_color,
-            "%.2f GiB",
-            memory.local_budget_bytes* bytes_to_gib
-        );
-
-        ImGui::TextColored(label_color, "Non-local Memory Usage:");
-        ImGui::SameLine();
-        ImGui::TextColored(
-            get_memory_color(
-                memory.non_local_used_bytes,
-                memory.non_local_budget_bytes
-            ),
-            "%.2f GiB",
-            memory.non_local_used_bytes* bytes_to_gib
-        );
-
-        draw_memory_bar(
-            memory.non_local_used_bytes,
-            memory.non_local_budget_bytes
-        );
-
-        ImGui::TextColored(label_color, "Non-local Memory Budget:");
-        ImGui::SameLine();
-        ImGui::TextColored(
-            value_color,
-            "%.2f GiB",
-            memory.non_local_budget_bytes* bytes_to_gib
+        draw_gpu_stats(
+            _rendering_context,
+            label_color,
+            value_color
         );
 
         ImGui::Separator();

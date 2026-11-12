@@ -10,9 +10,16 @@ enum class key {
     S,
     D,
     R,
+    Q,
     space,
     escape,
-    F11
+    F11,
+    left_ctrl,
+    right_ctrl,
+    left_alt,
+    right_alt,
+    left_shift,
+    right_shift
 };
 
 /** Represents the mouse buttons supported by the input system. */

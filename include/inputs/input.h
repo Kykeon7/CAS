@@ -3,6 +3,7 @@
 #include <SDL3/SDL.h>
 
 #include <array>
+#include <initializer_list>
 
 #include <inputs/input_keys.h>
 #include <math/vec2.h>
@@ -34,6 +35,10 @@ namespace cas::inputs {
         [[nodiscard]] bool is_key_held(key key) const;
         [[nodiscard]] bool is_key_pressed(key key) const;
         [[nodiscard]] bool is_key_released(key key) const;
+
+        [[nodiscard]] bool is_key_chord_pressed(
+            std::initializer_list<key> keys
+        ) const;
 
         [[nodiscard]] bool is_mouse_held(mouse_button btn) const;
         [[nodiscard]] bool is_mouse_pressed(mouse_button btn) const;

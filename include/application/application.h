@@ -89,6 +89,13 @@ private:
     void process_events();
 
     /**
+     * @brief Processes application-wide keyboard shortcuts.
+     *
+     * Handles simulation controls and application exit requests.
+     */
+    void process_input();
+
+    /**
      * @brief Updates the application state.
      *
      * Processes file requests, starts pending workspace loading,
@@ -201,6 +208,11 @@ private:
      */
     void start_initial_workspace_load();
 
+    /**
+     * @brief Requests confirmation before closing the application.
+     */
+    void request_exit_confirmation();
+
 private:
     settings _settings;
 
@@ -225,7 +237,9 @@ private:
     viewports::manager::viewport_id _prev_active_viewport = 0;
 
     inputs::input _input;
+
     bool _is_running = false;
+    bool _exit_confirmation_pending = false;
 
     gui::panels::collection _panels;
     std::unique_ptr<gui::layout> _layout;

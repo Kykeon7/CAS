@@ -3,6 +3,7 @@
 #include <chrono>
 #include <cstdint>
 #include <deque>
+#include <functional>
 #include <mutex>
 #include <optional>
 #include <string>
@@ -108,6 +109,20 @@ public:
     );
 
     /**
+     * @brief Enqueues a confirmation dialog.
+     *
+     * @param category Dialog title.
+     * @param message Confirmation message.
+     * @param on_result Callback invoked with true when confirmed
+     *                  or false when cancelled.
+     */
+    void confirm(
+        std::string_view category,
+        std::string_view message,
+        std::function<void(bool)> on_result
+    );
+
+    /**
      * @brief Starts a blocking notification.
      *
      * @param category Notification category.
@@ -163,13 +178,20 @@ private:
     enum class command_type {
         add,
         dismiss,
-        update_progress
+        update_progress,
+        confirm
     };
 
     struct command {
         command_type type = command_type::add;
         notification value;
         notification_id id = 0;
+        std::function<void(bool)> on_result;
+    };
+
+    struct confirmation {
+        notification value;
+        std::function<void(bool)> on_result;
     };
 
     void enqueue(
@@ -182,6 +204,7 @@ private:
     void render_toasts();
     void render_blocking();
     void render_error_modal();
+    void render_confirmation();
 
     std::mutex _mutex;
     std::deque<command> _pending;
@@ -190,6 +213,7 @@ private:
     std::deque<notification> _errors;
 
     std::optional<notification> _active_error;
+    std::optional<confirmation> _confirmation;
 
     notification_id _next_id = 1;
     bool _error_popup_open_requested = false;

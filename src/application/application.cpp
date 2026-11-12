@@ -292,9 +292,12 @@ void application::run() {
         profiler.begin(system::profile_id::run);
 
         time.tick();
+
         _input.update();
 
         process_events();
+
+        process_input();
 
         update();
 
@@ -308,14 +311,97 @@ void application::process_events() {
     SDL_Event event{};
 
     while (SDL_PollEvent(&event)) {
-        if (event.type == SDL_EVENT_QUIT)
-            _is_running = false;
+        if ( event.type == SDL_EVENT_QUIT ||
+            event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED
+            ) {
+            request_exit_confirmation();
+        }
 
         if (event.type == SDL_EVENT_MOUSE_WHEEL)
             _input.add_mouse_wheel(event.wheel.y);
 
         if (_gui)
             _gui->process_event(event);
+    }
+}
+
+void application::process_input() {
+    if (_input.is_key_chord_pressed({
+        inputs::key::left_ctrl,
+        inputs::key::left_shift,
+        inputs::key::space
+        }) || _input.is_key_chord_pressed({
+            inputs::key::right_ctrl,
+            inputs::key::left_shift,
+            inputs::key::space
+            }) || _input.is_key_chord_pressed({
+                inputs::key::left_ctrl,
+                inputs::key::right_shift,
+                inputs::key::space
+                }) || _input.is_key_chord_pressed({
+                    inputs::key::right_ctrl,
+                    inputs::key::right_shift,
+                    inputs::key::space
+                    })) {
+        _workspace.viewports().active_viewport().simulation().toggle();
+    }
+
+    const bool randomize =
+        _input.is_key_chord_pressed({
+            inputs::key::left_ctrl,
+            inputs::key::left_shift,
+            inputs::key::R
+            }) ||
+        _input.is_key_chord_pressed({
+            inputs::key::right_ctrl,
+            inputs::key::left_shift,
+            inputs::key::R
+            }) ||
+        _input.is_key_chord_pressed({
+            inputs::key::left_ctrl,
+            inputs::key::right_shift,
+            inputs::key::R
+            }) ||
+        _input.is_key_chord_pressed({
+            inputs::key::right_ctrl,
+            inputs::key::right_shift,
+            inputs::key::R
+            });
+
+    if (randomize) {
+        auto& simulation =
+            _workspace.viewports().active_viewport().simulation();
+
+        const auto& randomization = _settings.randomization;
+        const int states = simulation.rule().state_count();
+
+        if (states == 2) {
+            simulation.randomize(
+                randomization.two_states,
+                randomization.seed
+            );
+        }
+        else if (states == 3) {
+            simulation.randomize(
+                randomization.three_states,
+                randomization.seed
+            );
+        }
+    }
+
+    if (
+        _input.is_key_chord_pressed({
+            inputs::key::left_ctrl,
+            inputs::key::left_shift,
+            inputs::key::Q
+            }) ||
+        _input.is_key_chord_pressed({
+            inputs::key::right_ctrl,
+            inputs::key::right_shift,
+            inputs::key::Q
+            })
+        ) {
+        request_exit_confirmation();
     }
 }
 
@@ -1153,6 +1239,25 @@ void application::start_initial_workspace_load() {
         };
 
     _file_operation_handler.submit(std::move(job));
+}
+
+void application::request_exit_confirmation() {
+    if (_exit_confirmation_pending)
+        return;
+
+    _exit_confirmation_pending = true;
+
+    _notifications.confirm(
+        "Confirm Exit",
+        "Are you sure you want to exit CAS? "
+        "Any unsaved changes will be lost.",
+        [this](bool confirmed) {
+            _exit_confirmation_pending = false;
+
+            if (confirmed)
+                _is_running = false;
+        }
+    );
 }
 
 } // namespace cas

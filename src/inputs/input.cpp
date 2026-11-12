@@ -51,6 +51,27 @@ bool input::is_key_released(key key) const {
     return !_curr_keys[sc] && _prev_keys[sc];
 }
 
+bool input::is_key_chord_pressed(
+    std::initializer_list<key> keys
+) const {
+    if (keys.size() < 2)
+        return false;
+
+    bool any_pressed = false;
+
+    for (const key key : keys) {
+        const auto sc = key_to_sdl(key);
+
+        if (sc == SDL_SCANCODE_UNKNOWN || !_curr_keys[sc])
+            return false;
+
+        if (!_prev_keys[sc])
+            any_pressed = true;
+    }
+
+    return any_pressed;
+}
+
 bool input::is_mouse_held(mouse_button btn) const {
     const auto idx = mouse_to_index(btn);
     return _curr_mouse[idx];

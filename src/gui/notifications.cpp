@@ -89,6 +89,30 @@ void notifications::error(
     });
 }
 
+void notifications::confirm(
+    std::string_view category,
+    std::string_view message,
+    std::function<void(bool)> on_result
+) {
+    notification item{
+        .id = 0,
+        .level = notification_level::warning,
+        .category = std::string(category),
+        .message = std::string(message),
+        .blocking = true,
+        .duration = std::chrono::milliseconds::zero()
+    };
+
+    std::lock_guard lock(_mutex);
+
+    _pending.push_back({
+        .type = command_type::confirm,
+        .value = std::move(item),
+        .id = 0,
+        .on_result = std::move(on_result)
+        });
+}
+
 notification_id notifications::begin_blocking(
     std::string_view category,
     std::string_view message
@@ -211,6 +235,17 @@ void notifications::render() {
     }
 
     for (auto& item : pending) {
+        if (item.type == command_type::confirm) {
+            if (!_confirmation.has_value()) {
+                _confirmation = confirmation{
+                    .value = std::move(item.value),
+                    .on_result = std::move(item.on_result)
+                };
+            }
+
+            continue;
+        }
+
         if (item.type == command_type::dismiss) {
             std::erase_if(
                 _blocking,
@@ -272,6 +307,7 @@ void notifications::render() {
     render_toasts();
     render_blocking();
     render_error_modal();
+    render_confirmation();
 }
 
 void notifications::render_toasts() {
@@ -477,6 +513,85 @@ void notifications::render_error_modal() {
         }
 
         ImGui::EndPopup();
+    }
+}
+
+void notifications::render_confirmation() {
+    if (!_confirmation.has_value())
+        return;
+
+    // Avoid displaying multiple modal dialogs simultaneously.
+    if (!_blocking.empty() || _active_error.has_value())
+        return;
+
+    constexpr const char* popup_name = "CAS Confirmation";
+
+    if (!ImGui::IsPopupOpen(popup_name))
+        ImGui::OpenPopup(popup_name);
+
+    ImGui::SetNextWindowSize(
+        ImVec2(440.0f, 0.0f),
+        ImGuiCond_Appearing
+    );
+
+    bool completed = false;
+    bool confirmed = false;
+
+    if (ImGui::BeginPopupModal(
+        popup_name,
+        nullptr,
+        ImGuiWindowFlags_AlwaysAutoResize |
+        ImGuiWindowFlags_NoSavedSettings
+    )) {
+        ImGui::TextUnformatted(
+            _confirmation->value.category.c_str()
+        );
+
+        ImGui::Separator();
+
+        ImGui::TextWrapped(
+            "%s",
+            _confirmation->value.message.c_str()
+        );
+
+        ImGui::Spacing();
+        ImGui::Spacing();
+
+        const float button_width = 100.0f;
+
+        const float available_width =
+            ImGui::GetContentRegionAvail().x;
+
+        ImGui::SetCursorPosX(
+            ImGui::GetCursorPosX() +
+            available_width - button_width * 2.0f -
+            ImGui::GetStyle().ItemSpacing.x
+        );
+
+        if (ImGui::Button("Cancel", ImVec2(button_width, 0.0f))) {
+            completed = true;
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Exit", ImVec2(button_width, 0.0f))) {
+            completed = true;
+            confirmed = true;
+        }
+
+        if (completed)
+            ImGui::CloseCurrentPopup();
+
+        ImGui::EndPopup();
+    }
+
+    if (completed) {
+        auto callback = std::move(_confirmation->on_result);
+
+        _confirmation.reset();
+
+        if (callback)
+            callback(confirmed);
     }
 }
 

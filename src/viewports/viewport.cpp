@@ -1,15 +1,15 @@
 #include <viewports/viewport.h>
 
+#include <algorithm>
+#include <utility>
+#include <stdexcept>
+
 #include <automata/rules/factory.h>
 #include <automata/topologies.h>
 #include <rendering/automaton/hex_renderer.h>
-#include <system/time.h>
-
+#include <system/logger.h>
 #include <system/profiler.h>
-
-#include <algorithm>
-#include <cmath>
-#include <iostream>
+#include <system/time.h>
 
 namespace cas::viewports {
 

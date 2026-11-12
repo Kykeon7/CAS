@@ -1,21 +1,21 @@
-
 #include <gui/initializer.h>
+
+#include <application/settings.h>
+#include <files/dialog_service.h>
 #include <gui/layout.h>
-#include <gui/panels/collection.h>
-#include <gui/settings_window.h>
-#include <gui/panels/simulation.h>
-#include <gui/panels/stats.h>
 #include <gui/panels/appearance.h>
+#include <gui/panels/collection.h>
+#include <gui/panels/file.h>
 #include <gui/panels/graphs.h>
 #include <gui/panels/help.h>
+#include <gui/panels/simulation.h>
+#include <gui/panels/stats.h>
 #include <gui/panels/viewport.h>
-#include <gui/panels/file.h>
-#include <inputs/input.h>
-#include <viewports/manager.h>
+#include <gui/settings_window.h>
 #include <gui/viewport_view.h>
-#include <files/dialog_service.h>
-#include <application/settings.h>
+#include <inputs/input.h>
 #include <rendering/context.h>
+#include <viewports/manager.h>
 
 namespace cas::gui {
 
@@ -89,4 +89,4 @@ void initializer::initialize(
     );
 }
 
-} // namespace cas
+} // namespace cas::gui

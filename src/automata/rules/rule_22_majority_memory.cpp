@@ -1,5 +1,4 @@
-
-#include "automata/rules/rule_22_majority_memory.h"
+#include <automata/rules/rule_22_majority_memory.h>
 
 namespace cas::automata::rules {
 

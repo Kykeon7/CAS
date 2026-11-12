@@ -1,17 +1,21 @@
-
-#include "gui/manager.h"
+#include <gui/manager.h>
 
 #include <imgui_impl_sdl3.h>
-#include <imgui_impl_sdlrenderer3.h>
 #include <imgui_impl_sdlgpu3.h>
+#include <imgui_impl_sdlrenderer3.h>
+#include <imgui_internal.h>
 #include <implot.h>
+
 #include <stdexcept>
 #include <utility>
-#include <imgui_internal.h>
+
 #include <gui/style.h>
 
 namespace cas::gui {
 
+/**
+ * @brief Abstracts the rendering operations required by the GUI manager.
+ */
 class gui_backend {
 public:
     virtual ~gui_backend() = default;
@@ -53,6 +57,9 @@ void initialize_imgui_context() {
     io.IniFilename = nullptr;
 }
 
+/**
+ * @brief Implements GUI rendering through SDL Renderer.
+ */
 class cpu_gui_backend final : public gui_backend {
 public:
     cpu_gui_backend(
@@ -118,6 +125,9 @@ public:
     }
 };
 
+/**
+ * @brief Implements GUI rendering through SDL GPU.
+ */
 class gpu_gui_backend final : public gui_backend {
 public:
     explicit gpu_gui_backend(
@@ -204,7 +214,8 @@ manager::manager(
             window,
             renderer
         );
-    } catch (...) {
+    }
+    catch (...) {
         ImPlot::DestroyContext();
         ImGui::DestroyContext();
         throw;
@@ -252,9 +263,10 @@ void manager::apply_interface_settings(
 manager::frame::frame(
     manager& gui,
     platform::renderer& renderer
-)
-    : _gui(&gui),
-      _renderer(&renderer) {
+) :
+    _gui(&gui),
+    _renderer(&renderer)
+{
     if (gui._backend->is_gpu()) {
         throw std::logic_error(
             "CPU frame requested on the GPU backend."
@@ -265,14 +277,15 @@ manager::frame::frame(
 }
 
 manager::frame::~frame() {
-    if (_gui != nullptr) {
+    if (_gui != nullptr)
         _gui->end_frame_internal(*_renderer);
-    }
 }
 
-manager::frame::frame(frame&& other) noexcept
-    : _gui(std::exchange(other._gui, nullptr)),
-      _renderer(std::exchange(other._renderer, nullptr)) {}
+manager::frame::frame(manager::frame&& other) noexcept :
+    _gui(std::exchange(other._gui, nullptr)),
+    _renderer(std::exchange(other._renderer, nullptr))
+{
+}
 
 manager::frame manager::begin_frame(
     platform::renderer& renderer
@@ -330,6 +343,15 @@ void manager::begin_frame() {
     _draw_data_prepared = false;
 
     begin_frame_internal();
+}
+
+void manager::cancel_frame() noexcept {
+    if (_frame_started) {
+        ImGui::EndFrame();
+        _frame_started = false;
+    }
+
+    _draw_data_prepared = false;
 }
 
 void manager::prepare_draw_data(

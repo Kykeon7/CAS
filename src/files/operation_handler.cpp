@@ -1,18 +1,17 @@
-
 #include <files/operation_handler.h>
 
 #include <stdexcept>
-#include <type_traits>
 #include <utility>
 
 namespace cas::files {
 
-operation_handler::operation_handler()
-    : _worker(
+operation_handler::operation_handler() :
+    _worker(
         [this](std::stop_token stop_token) {
             worker_loop(stop_token);
         }
-    ) {
+    )
+{
 }
 
 operation_handler::~operation_handler() {
@@ -259,4 +258,4 @@ file_operation_result operation_handler::execute(
     return result;
 }
 
-} // namespace cas
+} // namespace cas::files

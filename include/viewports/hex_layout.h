@@ -1,12 +1,33 @@
+
 #pragma once
 
 #include <cmath>
-#include "math/vec2.h"
+#include <utility>
+
+#include <math/vec2.h>
 
 namespace cas::viewports {
 
+/**
+ * Converts between axial hexagonal coordinates and world-space positions.
+ *
+ * Uses a pointy-top hexagonal layout, where each cell is identified
+ * by axial coordinates (q, r). The layout supports configurable cell
+ * size and world-space offsets.
+ */
 struct hex_layout {
 
+    /**
+     * Converts axial hexagonal coordinates into world-space coordinates.
+     *
+     * @param q Axial column coordinate.
+     * @param r Axial row coordinate.
+     * @param size Hexagon size in world-space units.
+     * @param offset_x Horizontal world-space offset.
+     * @param offset_y Vertical world-space offset.
+     * @return World-space position corresponding to the hexagonal cell.
+     */
+    [[nodiscard]]
     math::vec2f hex_to_world(
         int q,
         int r,
@@ -22,8 +43,23 @@ struct hex_layout {
         return { x + offset_x, y + offset_y };
     }
 
+    /**
+     * Converts world-space coordinates into the nearest axial hexagonal
+     * coordinates.
+     *
+     * Uses fractional axial coordinates followed by cube-coordinate
+     * rounding to determine the nearest hexagonal cell.
+     *
+     * @param world_x Horizontal world-space coordinate.
+     * @param world_y Vertical world-space coordinate.
+     * @param size Hexagon size in world-space units.
+     * @param offset_x Horizontal world-space offset.
+     * @param offset_y Vertical world-space offset.
+     * @return Axial coordinates (q, r) of the nearest hexagonal cell.
+     */
+    [[nodiscard]]
     std::pair<int, int> world_to_hex(
-        float world_x, 
+        float world_x,
         float world_y,
         float size = 8.f,
         float offset_x = 0.f,
@@ -31,15 +67,12 @@ struct hex_layout {
     ) const {
         const float sqrt3 = 1.732050807f;
 
-        // quitar offset
         float wx = world_x - offset_x;
         float wy = world_y - offset_y;
 
-        // axial fraccional
         float q = (sqrt3 / 3.0f * wx - 1.0f / 3.0f * wy) / size;
         float r = (2.0f / 3.0f * wy) / size;
 
-        // cube coords
         float x = q;
         float z = r;
         float y = -x - z;

@@ -1,4 +1,3 @@
-
 #include <viewports/camera.h>
 
 namespace cas::viewports {

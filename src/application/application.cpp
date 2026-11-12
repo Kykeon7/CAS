@@ -1,45 +1,42 @@
-#include "application/application.h"
+#include <application/application.h>
 
-#include <system/time.h>
-#include <inputs/input.h>
-
-#include <gui/panels/simulation.h>
-#include <gui/panels/stats.h>
-#include <gui/panels/appearance.h>
-#include <gui/panels/graphs.h>
-#include <gui/panels/help.h>
-#include <gui/panels/viewport.h>
-#include <gui/panels/file.h>
-
-#include <gui/manager.h>
-#include <system/profiler.h>
-#include <system/info.h>
-
-#include <files/serialization/automaton.h>
-#include <files/serialization/viewport.h>
-#include <files/serialization/workspace.h>
+#include <SDL3/SDL.h>
 
 #include <exception>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <chrono>
 #include <utility>
 
-#include <platform/gpu_renderer.h>
-
-#include <viewports/camera.h>
-
-#include <rendering/automaton/hex_renderer.h>
-#include <rendering/automaton/gpu_renderer.h>
-#include <system/logger.h>
-
-#include <cassert>
-#include <automata/topology.h>
-#include <array>
-#include <automata/topologies.h>
-#include <automata/rules/rule_22_majority_memory.h>
-#include <memory>
-#include <gui/panels/container.h>
 #include <automata/automaton.h>
-#include <gui/viewport_view.h>
+#include <automata/rules/rule_22_majority_memory.h>
+#include <automata/topologies.h>
+#include <automata/topology.h>
+#include <files/serialization/automaton.h>
 #include <files/serialization/settings.h>
+#include <files/serialization/viewport.h>
+#include <files/serialization/workspace.h>
+#include <gui/manager.h>
+#include <gui/panels/appearance.h>
+#include <gui/panels/container.h>
+#include <gui/panels/file.h>
+#include <gui/panels/graphs.h>
+#include <gui/panels/help.h>
+#include <gui/panels/simulation.h>
+#include <gui/panels/stats.h>
+#include <gui/panels/viewport.h>
+#include <gui/viewport_view.h>
+#include <inputs/input.h>
+#include <platform/gpu_renderer.h>
+#include <rendering/automaton/gpu_renderer.h>
+#include <rendering/automaton/hex_renderer.h>
+#include <system/info.h>
+#include <system/logger.h>
+#include <system/profiler.h>
+#include <system/time.h>
+#include <viewports/camera.h>
 
 namespace {
 
@@ -81,6 +78,8 @@ application::application(rendering::backend backend)
     auto& logger = system::logger::instance();
 
     logger.info("Application", "Initializing CAS.");
+
+    system::print_system_info();
 
     // Resolve portable application directories.
     const auto application_directory =
@@ -384,44 +383,52 @@ void application::render() {
 
     auto* renderer = _rendering_context.gpu_renderer();
 
-    renderer->begin_frame();
-    _gui->begin_frame();
+    try {
+        renderer->begin_frame();
+        _gui->begin_frame();
 
-    _main_menu.render(*_viewport_view);
+        _main_menu.render(*_viewport_view);
 
-    if (_main_menu.consume_layout_reset_request()) {
-        _panels.reset_visibility();
-        _layout->reset_layout();
-    }
-
-    if (auto request = _main_menu.consume_settings_request()) {
-        _settings_window.open(*request);
-    }
-
-    _layout->render(_panels);
-    _notifications.render();
-    _settings_window.render();
-
-    _layout->set_persistence_enabled(
-        _settings.save_imgui_layout
-    );
-
-    _gui->prepare_draw_data(
-        renderer->frame().command_buffer()
-    );
-
-    if (renderer->frame().has_swapchain_texture()) {
-        auto* render_pass = renderer->frame().begin_render_pass();
-
-        if (render_pass) {
-            _gui->render_draw_data(
-                renderer->frame().command_buffer(),
-                render_pass
-            );
+        if (_main_menu.consume_layout_reset_request()) {
+            _panels.reset_visibility();
+            _layout->reset_layout();
         }
-    }
 
-    renderer->end_frame();
+        if (auto request = _main_menu.consume_settings_request()) {
+            _settings_window.open(*request);
+        }
+
+        _layout->render(_panels);
+        _notifications.render();
+        _settings_window.render();
+
+        _layout->set_persistence_enabled(
+            _settings.save_imgui_layout
+        );
+
+        _gui->prepare_draw_data(
+            renderer->frame().command_buffer()
+        );
+
+        if (renderer->frame().has_swapchain_texture()) {
+            auto* render_pass = renderer->frame().begin_render_pass();
+
+            if (render_pass) {
+                _gui->render_draw_data(
+                    renderer->frame().command_buffer(),
+                    render_pass
+                );
+            }
+        }
+
+        renderer->end_frame();
+    }
+    catch (...) {
+        _gui->cancel_frame();
+        renderer->cancel_frame();
+
+        throw;
+    }
 }
 
 
@@ -452,10 +459,16 @@ void application::initialize_backend() {
 
     _gui = std::make_unique<gui::manager>(*device);
 
+    const char* device_name = device->name();
+
     logger.info(
         "Renderer",
         "GPU backend initialized: " +
-        std::string(device->name())
+        std::string(
+            device_name != nullptr
+            ? device_name
+            : "Unknown"
+        )
     );
 }
 
@@ -1121,10 +1134,10 @@ void application::start_initial_workspace_load() {
         "Loading workspace..."
     );
 
-    files::file_job job{
-        .operation = files::file_operation::load_workspace,
-        .path = _workspace.path()
-    };
+    files::file_job job;
+    job.operation = files::file_operation::load_workspace;
+    job.path = _workspace.path();
+    
 
     job.on_progress = [this, id = *_workspace_load_notification](
         std::uint64_t completed,

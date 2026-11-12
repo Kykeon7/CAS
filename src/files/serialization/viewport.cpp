@@ -1,14 +1,17 @@
-#include <files/serialization/workspace.h>
-
-#include <files/serialization/automaton.h>
+#include <files/serialization/viewport.h>
 
 #include <nlohmann/json.hpp>
 
 #include <cmath>
+#include <cstdint>
 #include <fstream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
+#include <utility>
 #include <vector>
+
+#include <files/serialization/automaton.h>
 #include <files/serialization/json_file_reader.h>
 
 namespace cas::files::serialization {

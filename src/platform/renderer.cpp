@@ -1,10 +1,12 @@
-#include "platform/renderer.h"
+#include <platform/renderer.h>
 
 #include <cmath>
-#include <platform/color_conv.h>
-#include <platform/vec_conv.h>
+#include <limits>
 #include <numbers>
 #include <stdexcept>
+
+#include <platform/color_conv.h>
+#include <platform/vec_conv.h>
 
 namespace cas::platform {
 
@@ -30,24 +32,22 @@ renderer::~renderer() {
         SDL_DestroyRenderer(_handle);
 }
 
-renderer::renderer(
-    renderer&& other
-) noexcept
+renderer::renderer(renderer&& other) noexcept
     : _handle(other._handle),
-      _camera(other._camera)
+    _camera(other._camera),
+    _draw_color(other._draw_color)
 {
     other._handle = nullptr;
 }
 
-renderer& renderer::operator=(
-    renderer&& other
-) noexcept
-{
+renderer& renderer::operator=(renderer&& other) noexcept {
     if (this != &other) {
         if (_handle)
             SDL_DestroyRenderer(_handle);
 
         _handle = other._handle;
+        _camera = other._camera;
+        _draw_color = other._draw_color;
 
         other._handle = nullptr;
     }
@@ -87,18 +87,8 @@ void renderer::set_draw_color(
     );
 }
 
-void renderer::clear(
-    const graphics::color& color
-) {
-    const auto sdl = to_sdl(color);
-
-    SDL_SetRenderDrawColor(
-        _handle,
-        sdl.r,
-        sdl.g,
-        sdl.b,
-        sdl.a
-    );
+void renderer::clear(const graphics::color& color) {
+    set_draw_color(color);
 
     SDL_RenderClear(_handle);
 }
@@ -312,12 +302,18 @@ void renderer::fill_hex(
     );
 }
 
-void cas::platform::renderer::draw_geometry(
+void renderer::draw_geometry(
     std::span<const SDL_Vertex> vertices,
     std::span<const int> indices
 ) {
-    if (vertices.empty() || indices.empty())
-        return;
+    if (vertices.size() > static_cast<std::size_t>(
+        std::numeric_limits<int>::max()
+        ) ||
+        indices.size() > static_cast<std::size_t>(
+            std::numeric_limits<int>::max()
+            )) {
+        throw std::length_error("Geometry exceeds SDL limits.");
+    }
 
     SDL_RenderGeometry(
         _handle,
@@ -329,7 +325,7 @@ void cas::platform::renderer::draw_geometry(
     );
 }
 
-void cas::platform::renderer::draw_texture(
+void renderer::draw_texture(
     SDL_Texture* texture,
     const math::vec4& destination) 
 {

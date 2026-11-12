@@ -1,14 +1,14 @@
-
-#include "gui/notifications.h"
-
-#include <system/logger.h>
+#include <gui/notifications.h>
 
 #include <imgui.h>
 
+#include <system/logger.h>
+
 #include <algorithm>
+#include <cmath>
+#include <cstddef>
 #include <string>
 #include <utility>
-#include <cmath>
 
 namespace cas::gui {
 namespace {
@@ -16,6 +16,9 @@ namespace {
 constexpr float toast_width = 340.0f;
 constexpr float toast_margin = 16.0f;
 
+/**
+ * @brief Returns the display name associated with a notification level.
+ */
 const char* level_name(notification_level level) {
     switch (level) {
     case notification_level::info:
@@ -138,9 +141,8 @@ void notifications::update_progress(
     std::uint64_t total,
     std::string_view stage
 ) {
-    if (id == 0 || total == 0) {
+    if (id == 0 || total == 0)
         return;
-    }
 
     notification value;
 
@@ -156,7 +158,7 @@ void notifications::update_progress(
         .type = command_type::update_progress,
         .value = std::move(value),
         .id = id
-        });
+    });
 }
 
 void notifications::enqueue(
@@ -201,7 +203,6 @@ void notifications::enqueue(
 }
 
 void notifications::render() {
-    // Render se ejecuta en el hilo principal.
     std::deque<command> pending;
 
     {

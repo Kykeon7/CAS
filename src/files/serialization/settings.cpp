@@ -1,12 +1,15 @@
+
 #include <files/serialization/settings.h>
 
 #include <nlohmann/json.hpp>
 
+#include <array>
+#include <cmath>
+#include <cstdint>
 #include <fstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <cmath>
 
 namespace cas::files::serialization {
 namespace {
@@ -22,7 +25,8 @@ void validate_workspace_filename(
         || filename == "."
         || filename == ".."
         || filename.find('/') != std::string_view::npos
-        || filename.find('\\') != std::string_view::npos) {
+        || filename.find('\\') != std::string_view::npos)
+    {
         throw std::runtime_error(
             "Invalid workspace filename"
         );
@@ -87,15 +91,14 @@ ui_density ui_density_from_string(const std::string& value) {
 void validate_interface(const interface_settings& settings) {
     if (!std::isfinite(settings.scale)
         || settings.scale < 0.8f
-        || settings.scale > 1.2f) {
+        || settings.scale > 1.2f)
+    {
         throw std::runtime_error("Invalid UI scale");
     }
 
-    // También valida que los valores de los enums sean válidos.
     to_string(settings.theme);
     to_string(settings.density);
 }
-
 
 void validate_settings(
     const settings& settings
@@ -105,7 +108,6 @@ void validate_settings(
     );
 
     validate_randomization(settings.randomization);
-
     validate_interface(settings.interface);
 }
 
@@ -186,7 +188,8 @@ settings load_application_settings(
     }
 
     if (document.at("schema_version").get<int>()
-        != schema_version) {
+        != schema_version)
+    {
         throw std::runtime_error(
             "Unsupported application settings schema version"
         );
@@ -338,4 +341,4 @@ settings load_application_settings_file(
     return load_application_settings(document);
 }
 
-} // namespace cas::serialization
+} // namespace cas::files::serialization

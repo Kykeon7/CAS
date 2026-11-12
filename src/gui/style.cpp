@@ -2,6 +2,7 @@
 
 #include <imgui.h>
 
+#include <algorithm>
 #include <stdexcept>
 
 namespace cas::gui {
@@ -87,4 +88,4 @@ void apply_interface_style(const interface_settings& settings) {
         base_font_scale * settings.scale;
 }
 
-} // namespace cas  
+} // namespace cas::gui

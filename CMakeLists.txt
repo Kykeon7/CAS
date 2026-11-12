@@ -3,6 +3,16 @@ cmake_minimum_required(VERSION 3.21)
 project(CAS LANGUAGES CXX)
 
 # ============================================================
+# Default build configuration
+# ============================================================
+
+if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING
+        "Build configuration" FORCE
+    )
+endif()
+
+# ============================================================
 # Project configuration
 # ============================================================
 
@@ -142,8 +152,8 @@ add_executable(CAS
     src/gui/layout.cpp
     src/gui/main_menu.cpp
     src/gui/manager.cpp
-    src/gui/notification_manager.cpp
-    src/gui/panel_container.cpp
+    "src/gui/notifications.cpp"
+    "src/gui/panels/container.cpp"
     src/gui/rule_editor.cpp
     src/gui/settings_window.cpp
     src/gui/style.cpp

@@ -1,18 +1,17 @@
-
 #include <gui/panels/appearance.h>
-
-#include <gui/color_conv.h>
 
 #include <imgui.h>
 
 #include <algorithm>
 #include <cmath>
-#include <imgui_internal.h>
+#include <numbers>
+
+#include <gui/color_conv.h>
 
 namespace cas::gui::panels {
 
-appearance::appearance(viewport_view& view)
-    : _view(view)
+appearance::appearance(viewport_view& view) :
+    _view(view)
 {
 }
 
@@ -21,21 +20,21 @@ void appearance::render() {
 
     ImGui::PushItemWidth(-1);
 
-    ImGui::BeginChild(
+    if (ImGui::BeginChild(
         "AppearanceContent",
         ImGui::GetContentRegionAvail()
-    );
+    )) {
+        render_colors();
+        ImGui::Separator();
 
-    render_colors();
-    ImGui::Separator();
+        render_layout();
+        ImGui::Separator();
 
-    render_layout();
-    ImGui::Separator();
+        render_preview();
+        ImGui::Separator();
 
-    render_preview();
-    ImGui::Separator();
-
-    render_actions();
+        render_actions();
+    }
 
     ImGui::EndChild();
 
@@ -165,7 +164,7 @@ void appearance::render_preview() const {
         ImVec2 points[6];
 
         for (int i = 0; i < 6; ++i) {
-            const float angle = IM_PI / 3.0f * i;
+            const float angle = std::numbers::pi_v<float> / 3.0f * i;
 
             points[i] = {
                 center.x + std::cos(angle) * radius,
@@ -188,7 +187,7 @@ void appearance::render_preview() const {
             ImDrawFlags_Closed,
             1.0f
         );
-        };
+    };
 
     // Extensión de la cuadrícula alrededor del centro visible.
     const int q_extent =

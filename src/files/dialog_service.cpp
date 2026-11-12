@@ -44,10 +44,20 @@ dialog_service::shared_state::consume() {
     return result;
 }
 
-dialog_service::dialog_service(platform::window& window)
-    : _window(window),
-      _state(std::make_shared<shared_state>())
-{}
+dialog_service::dialog_context::dialog_context(
+    std::shared_ptr<shared_state> state,
+    file_operation operation
+) :
+    state(std::move(state)),
+    operation(operation)
+{
+}
+
+dialog_service::dialog_service(platform::window& window) :
+    _window(window),
+    _state(std::make_shared<shared_state>())
+{
+}
 
 void dialog_service::open_dialog(file_operation operation) {
     auto context = std::make_unique<dialog_context>(

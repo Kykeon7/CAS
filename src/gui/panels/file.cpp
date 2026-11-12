@@ -4,8 +4,9 @@
 
 namespace cas::gui::panels {
 
-file::file(files::dialog_service& dialog_service)
-    : _dialog_service(dialog_service) {
+file::file(files::dialog_service& dialog_service) :
+    _dialog_service(dialog_service)
+{
 }
 
 void file::render() {

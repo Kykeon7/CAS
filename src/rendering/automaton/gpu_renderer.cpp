@@ -1,14 +1,13 @@
 #include <rendering/automaton/gpu_renderer.h>
 
-#include <platform/gpu_renderer.h>
-
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <span>
 #include <stdexcept>
 #include <vector>
-#include <iostream>
+
+#include <platform/gpu_renderer.h>
 
 namespace cas::rendering::automaton {
 

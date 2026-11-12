@@ -1,7 +1,10 @@
 #include "platform/window.h"
 
-#include <stdexcept>
 #include <SDL3/SDL.h>
+
+#include <stdexcept>
+#include <string>
+
 
 namespace cas::platform {
 
@@ -26,8 +29,10 @@ window::window(
     int width,
     int height
 ) {
+    const std::string title_string(title);
+
     _handle = SDL_CreateWindow(
-        title.data(),
+        title_string.c_str(),
         width,
         height,
         SDL_WINDOW_HIGH_PIXEL_DENSITY |

@@ -1,20 +1,21 @@
 #include <files/serialization/automaton.h>
 
-#include <automata/rules/binary.h>
-#include <automata/rules/beehive.h>
-#include <automata/rules/spiral.h>
-
-#include <automata/rules/rule_22_majority_memory.h>
-#include <automata/topology.h>
 #include <array>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <limits>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
-#include <filesystem>
-#include <fstream>
+
+#include <automata/rules/beehive.h>
+#include <automata/rules/binary.h>
+#include <automata/rules/rule_22_majority_memory.h>
+#include <automata/rules/spiral.h>
+#include <automata/topology.h>
 #include <files/serialization/json_file_reader.h>
 
 namespace cas::files::serialization {
@@ -212,7 +213,6 @@ json save_automaton(const automata::automaton& value) {
     return save_automaton(capture_automaton(value));
 }
 
-
 automata::automaton load_automaton(
     const json& document,
     progress_reporter progress
@@ -254,18 +254,14 @@ automata::automaton load_automaton(
     const auto& cell_values = document.at("cells");
 
     if (!cell_values.is_array() ||
-        cell_values.size() != static_cast<std::size_t>(cell_count)) {
+        cell_values.size() != static_cast<std::size_t>(cell_count))
+    {
         throw std::runtime_error(
             "Cell data does not match automaton dimensions."
         );
     }
 
-    automata::automaton restored(
-        width,
-        height,
-        std::move(topology),
-        std::move(rule)
-    );
+    const int state_count = rule->state_count();
 
     std::vector<automata::cell_state> cells;
     cells.reserve(cell_values.size());
@@ -287,8 +283,7 @@ automata::automaton load_automaton(
 
         const int state = value.get<int>();
 
-        if (state < 0 ||
-            state >= restored.rule().state_count()) {
+        if (state < 0 || state >= state_count) {
             throw std::runtime_error(
                 "Cell state is not supported by the selected rule."
             );
@@ -300,8 +295,9 @@ automata::automaton load_automaton(
 
         ++completed;
 
-        if (completed % progress_interval == 0
-            || completed == total) {
+        if (completed % progress_interval == 0 ||
+            completed == total)
+        {
             progress.report(
                 completed,
                 total,
@@ -316,14 +312,19 @@ automata::automaton load_automaton(
         "Restoring automaton state"
     );
 
+    automata::automaton restored(
+        width,
+        height,
+        std::move(topology),
+        std::move(rule)
+    );
+
     restored.restore_state(cells, generation);
 
     progress.complete("Automaton restored");
 
     return restored;
 }
-
-
 
 void save_automaton_file(
     const std::filesystem::path& path,

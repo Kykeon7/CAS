@@ -1,16 +1,16 @@
 #include <gui/settings_window.h>
 
 #include <imgui.h>
-#include <algorithm>
-#include <cstring>
-#include <string>
-#include <cmath>
-#include <system_error>
-#include <gui/viewport_view.h>
-#include <numeric>
-#include <cstdint>
-#include <gui/style.h>
 #include <imgui_internal.h>
+
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <cstring>
+#include <numeric>
+
+#include <gui/style.h>
+#include <gui/viewport_view.h>
 
 namespace cas::gui {
 namespace {
@@ -19,8 +19,8 @@ class interface_preview_scope {
 public:
     explicit interface_preview_scope(
         const interface_settings& settings
-    )
-        : _previous_style(ImGui::GetStyle()),
+    ) :
+        _previous_style(ImGui::GetStyle()),
         _previous_font_scale(ImGui::GetIO().FontGlobalScale)
     {
         apply_interface_style(settings);
@@ -31,15 +31,20 @@ public:
             ImGui::GetStyle().Colors[ImGuiCol_WindowBg];
     }
 
+    interface_preview_scope(const interface_preview_scope&) = delete;
+    interface_preview_scope& operator=(
+        const interface_preview_scope&
+        ) = delete;
+
+    interface_preview_scope(interface_preview_scope&&) = delete;
+    interface_preview_scope& operator=(
+        interface_preview_scope&&
+        ) = delete;
+
     ~interface_preview_scope() {
         ImGui::GetStyle() = _previous_style;
         ImGui::GetIO().FontGlobalScale = _previous_font_scale;
     }
-
-    interface_preview_scope(const interface_preview_scope&) = delete;
-    interface_preview_scope& operator=(
-        const interface_preview_scope&
-    ) = delete;
 
 private:
     ImGuiStyle _previous_style;
@@ -584,6 +589,11 @@ void settings_window::render_simulation() {
 
     ImGui::Text("Boundary");
     ImGui::Separator();
+
+    if (!_view) {
+        ImGui::TextDisabled("No viewport is available.");
+        return;
+    }
 
     const automata::boundary_type boundary =
         _view->get().simulation().automaton().topology().boundary();

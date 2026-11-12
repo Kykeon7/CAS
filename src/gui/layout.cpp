@@ -1,9 +1,4 @@
-
 #include <gui/layout.h>
-
-#include <gui/manager.h>
-
-#include <gui/panels/collection.h>
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -11,12 +6,15 @@
 #include <filesystem>
 #include <utility>
 
+#include <gui/manager.h>
+#include <gui/panels/collection.h>
+
 namespace cas::gui {
 
-layout::layout(manager& gui)
-    : _gui(gui)
-{}
-
+layout::layout(manager& gui) :
+    _gui(gui)
+{
+}
 
 void layout::build_default_layout() {
     const ImGuiID dockspace_id = ImGui::GetID("MainDockSpace");
@@ -84,9 +82,8 @@ void layout::build_default_layout() {
     ImGui::DockBuilderFinish(dockspace_id);
 }
 
-
-gui::panels::container& layout::create_container(std::string name) {
-    auto container = std::make_unique<gui::panels::container>(
+panels::container& layout::create_container(std::string name) {
+    auto container = std::make_unique<panels::container>(
         std::move(name)
     );
 
@@ -105,15 +102,14 @@ bool layout::initialize(
 
     ImGui::GetIO().IniFilename = nullptr;
 
-    _has_saved_layout =
+    const bool has_saved_layout =
         _persistence_enabled &&
         std::filesystem::exists(_ini_path);
 
-    _force_default_layout = !_has_saved_layout;
+    _force_default_layout = !has_saved_layout;
 
-    if (!_has_saved_layout) {
+    if (!has_saved_layout)
         return false;
-    }
 
     ImGui::LoadIniSettingsFromDisk(
         _ini_path.string().c_str()
@@ -123,8 +119,10 @@ bool layout::initialize(
 }
 
 bool layout::load() {
-    if (!_persistence_enabled
-        || !std::filesystem::exists(_ini_path)) {
+    if (
+        !_persistence_enabled ||
+        !std::filesystem::exists(_ini_path)
+    ) {
         return false;
     }
 
@@ -136,9 +134,8 @@ bool layout::load() {
 }
 
 bool layout::save() const {
-    if (!_persistence_enabled) {
+    if (!_persistence_enabled)
         return false;
-    }
 
     ImGui::SaveIniSettingsToDisk(
         _ini_path.string().c_str()
@@ -156,7 +153,7 @@ void layout::clear() {
     _force_default_layout = true;
 }
 
-void layout::render(gui::panels::collection& panels) {
+void layout::render(panels::collection& panels) {
     _gui.begin_dockspace();
 
     if (_force_default_layout) {
@@ -179,4 +176,4 @@ void layout::set_persistence_enabled(bool enabled) noexcept {
     _persistence_enabled = enabled;
 }
 
-} // namespace cas
+} // namespace cas::gui

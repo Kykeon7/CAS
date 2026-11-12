@@ -1,12 +1,12 @@
 #include <gui/rule_editor.h>
 
-#include <automata/rules/binary.h>
+#include <imgui.h>
 
 #include <cstdio>
 #include <string>
 #include <utility>
 
-#include <imgui.h>
+#include <automata/rules/binary.h>
 
 namespace cas::gui {
 
@@ -142,9 +142,10 @@ void rule_editor::render_string() {
     )) {
         auto new_rule = automata::rules::string_to_rule(_rule_buffer);
 
-        if (new_rule) {
+        if (new_rule)
             _temp_rule = std::move(new_rule);
-        }
+        else
+            _temp_rule.reset();
     }
 
     if (!_temp_rule) {

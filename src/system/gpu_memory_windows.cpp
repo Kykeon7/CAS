@@ -2,13 +2,15 @@
 #include <system/gpu_memory.h>
 
 #define NOMINMAX
-#include <windows.h>
+
 #include <dxgi1_4.h>
+#include <windows.h>
 #include <wrl/client.h>
 
 #include <algorithm>
-#include <cctype>
+#include <cwctype>
 #include <string>
+#include <utility>
 #include <vector>
 
 #pragma comment(lib, "dxgi.lib")
@@ -37,20 +39,20 @@ std::wstring to_wide(const char* text) {
         return {};
     }
 
-    std::wstring result(
-        static_cast<std::size_t>(length - 1),
-        L'\0'
-    );
+    std::wstring result(static_cast<std::size_t>(length), L'\0');
 
-    MultiByteToWideChar(
+    if (MultiByteToWideChar(
         CP_UTF8,
-        0,
+        MB_ERR_INVALID_CHARS,
         text,
         -1,
         result.data(),
         length
-    );
+    ) == 0) {
+        return {};
+    }
 
+    result.pop_back();
     return result;
 }
 
@@ -60,9 +62,7 @@ std::wstring lowercase(std::wstring value) {
         value.end(),
         value.begin(),
         [](wchar_t character) {
-            return static_cast<wchar_t>(
-                std::tolower(character)
-                );
+            return static_cast<wchar_t>(std::towlower(character));
         }
     );
 
@@ -94,16 +94,19 @@ gpu_memory_info get_gpu_memory_info(
     for (UINT index = 0;; ++index) {
         adapter_entry entry;
 
-        if (factory->EnumAdapters1(
+        const HRESULT status = factory->EnumAdapters1(
             index,
             &entry.adapter
-        ) == DXGI_ERROR_NOT_FOUND) {
-            break;
-        }
+        );
 
-        if (!entry.adapter) {
+        if (status == DXGI_ERROR_NOT_FOUND)
+            break;
+
+        if (FAILED(status))
+            return result;
+
+        if (!entry.adapter)
             continue;
-        }
 
         if (FAILED(entry.adapter->GetDesc1(
             &entry.description

@@ -11,13 +11,11 @@ gpu_frame::gpu_frame(gpu_device& device) noexcept
 {
 }
 
-gpu_frame::~gpu_frame()
-{
+gpu_frame::~gpu_frame() {
     cancel_frame();
 }
 
-void gpu_frame::begin_frame()
-{
+void gpu_frame::begin_frame() {
     if (command_buffer_)
         throw std::logic_error("A GPU frame is already active.");
 
@@ -38,10 +36,18 @@ void gpu_frame::begin_frame()
         nullptr,
         nullptr
     )) {
-        const std::string error =
-            std::string(
-                "SDL_WaitAndAcquireGPUSwapchainTexture failed: "
-            ) + SDL_GetError();
+        std::string error;
+
+        try {
+            error =
+                std::string(
+                    "SDL_WaitAndAcquireGPUSwapchainTexture failed: "
+                ) + SDL_GetError();
+        }
+        catch (...) {
+            cancel_frame();
+            throw;
+        }
 
         cancel_frame();
         throw std::runtime_error(error);
@@ -50,8 +56,7 @@ void gpu_frame::begin_frame()
 
 SDL_GPURenderPass* gpu_frame::begin_render_pass(
     SDL_FColor clear_color
-)
-{
+) {
     if (!command_buffer_)
         throw std::logic_error("No active GPU frame.");
 
@@ -86,8 +91,7 @@ SDL_GPURenderPass* gpu_frame::begin_render_pass(
     return render_pass_;
 }
 
-void gpu_frame::end_frame()
-{
+void gpu_frame::end_frame() {
     if (!command_buffer_)
         throw std::logic_error("No active GPU frame.");
 
@@ -109,21 +113,25 @@ void gpu_frame::end_frame()
     }
 }
 
-void gpu_frame::cancel_frame() noexcept
-{
+void gpu_frame::cancel_frame() noexcept {
     if (!command_buffer_)
         return;
 
-    // A command buffer cannot be cancelled with an active render pass.
     if (render_pass_) {
         SDL_EndGPURenderPass(render_pass_);
         render_pass_ = nullptr;
     }
 
-    SDL_CancelGPUCommandBuffer(command_buffer_);
+    SDL_GPUCommandBuffer* command_buffer = command_buffer_;
+    const bool has_acquired_texture = swapchain_texture_ != nullptr;
 
     command_buffer_ = nullptr;
     swapchain_texture_ = nullptr;
+
+    if (has_acquired_texture)
+        SDL_SubmitGPUCommandBuffer(command_buffer);
+    else
+        SDL_CancelGPUCommandBuffer(command_buffer);
 }
 
 } // namespace cas::platform

@@ -11,20 +11,32 @@
 
 namespace cas::gui {
 
+/**
+ * @brief Unique identifier assigned to a blocking notification.
+ */
 using notification_id = std::uint64_t;
 
+/**
+ * @brief Severity level of a notification.
+ */
 enum class notification_level {
     info,
     warning,
     error
 };
 
+/**
+ * @brief Progress information associated with a notification.
+ */
 struct notification_progress {
     std::uint64_t completed = 0;
     std::uint64_t total = 0;
     std::string stage;
 };
 
+/**
+ * @brief Data associated with a notification.
+ */
 struct notification {
     notification_id id = 0;
     notification_level level = notification_level::info;
@@ -35,6 +47,13 @@ struct notification {
     std::optional<notification_progress> progress;
 };
 
+/**
+ * @brief Manages application notifications and their GUI presentation.
+ *
+ * Notification requests can be submitted from other threads. They are
+ * transferred to the main thread through an internal command queue, where
+ * they are processed and rendered using Dear ImGui.
+ */
 class notifications final {
 public:
     notifications() = default;
@@ -42,6 +61,18 @@ public:
     notifications(const notifications&) = delete;
     notifications& operator=(const notifications&) = delete;
 
+    notifications(notifications&&) = delete;
+    notifications& operator=(notifications&&) = delete;
+
+    ~notifications() = default;
+
+    /**
+     * @brief Enqueues an informational toast notification.
+     *
+     * @param category Notification category.
+     * @param message Notification message.
+     * @param duration Time before the notification expires.
+     */
     void info(
         std::string_view category,
         std::string_view message,
@@ -49,6 +80,13 @@ public:
             std::chrono::seconds(5)
     );
 
+    /**
+     * @brief Enqueues a warning toast notification.
+     *
+     * @param category Notification category.
+     * @param message Notification message.
+     * @param duration Time before the notification expires.
+     */
     void warning(
         std::string_view category,
         std::string_view message,
@@ -56,18 +94,47 @@ public:
             std::chrono::seconds(5)
     );
 
+    /**
+     * @brief Enqueues an error notification.
+     *
+     * The error is also written to the application logger.
+     *
+     * @param category Notification category.
+     * @param message Error message.
+     */
     void error(
         std::string_view category,
         std::string_view message
     );
 
-    [[nodiscard]] notification_id begin_blocking(
+    /**
+     * @brief Starts a blocking notification.
+     *
+     * @param category Notification category.
+     * @param message Notification message.
+     * @return Identifier used to update or dismiss the notification.
+     */
+    [[nodiscard]]
+    notification_id begin_blocking(
         std::string_view category,
         std::string_view message
     );
 
+    /**
+     * @brief Requests dismissal of a blocking notification.
+     *
+     * @param id Identifier of the notification to dismiss.
+     */
     void dismiss(notification_id id);
 
+    /**
+     * @brief Updates the progress of a blocking notification.
+     *
+     * @param id Notification identifier.
+     * @param completed Completed units.
+     * @param total Total number of units.
+     * @param stage Optional description of the current stage.
+     */
     void update_progress(
         notification_id id,
         std::uint64_t completed,
@@ -75,7 +142,11 @@ public:
         std::string_view stage = {}
     );
 
-    // Solo desde el hilo principal durante un frame de ImGui.
+    /**
+     * @brief Processes pending commands and renders notifications.
+     *
+     * Must be called from the main thread during an active ImGui frame.
+     */
     void render();
 
 private:
@@ -124,4 +195,4 @@ private:
     bool _error_popup_open_requested = false;
 };
 
-} // namespace cas
+} // namespace cas::gui

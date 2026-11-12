@@ -1,29 +1,25 @@
+#include <application/application.h>
 #include <application/settings.h>
-#include "system/logger.h"
 
 #include <exception>
-#include <application/application.h>
 
-int main(int argc, char* argv[])
-{
+#include <system/logger.h>
+
+int main(int argc, char* argv[]) {
     (void)argc;
     (void)argv;
 
     auto& logger = cas::system::logger::instance();
 
-#ifdef NDEBUG
-    constexpr bool debug_mode = false;
-#else
-    constexpr bool debug_mode = true;
-#endif
+    constexpr bool console_output = true;
 
     try {
-        logger.initialize("logs/cas.log", debug_mode);
+        logger.initialize("logs/cas.log", console_output);
 
         logger.info("Application", "Starting CAS.");
 
         {
-            cas::application app(cas::rendering::backend::cpu);
+            cas::application app(cas::rendering::backend::gpu);
             app.run();
         }
 

@@ -1,17 +1,16 @@
 #include <rendering/context.h>
-#include <platform/window.h>
-#include <viewports/camera.h>
-#include <platform/renderer.h>
-#include <platform/gpu_renderer.h>
-#include <rendering/automaton/hex_renderer.h>
-#include <rendering/automaton/gpu_renderer.h>
-#include <viewports/viewport.h>
-
-#include <platform/gpu_device.h>
 
 #include <stdexcept>
-#include <string>
 #include <utility>
+
+#include <platform/gpu_device.h>
+#include <platform/gpu_renderer.h>
+#include <platform/renderer.h>
+#include <platform/window.h>
+#include <rendering/automaton/gpu_renderer.h>
+#include <rendering/automaton/hex_renderer.h>
+#include <viewports/camera.h>
+#include <viewports/viewport.h>
 
 namespace cas::rendering {
 

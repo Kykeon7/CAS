@@ -1,8 +1,10 @@
 #include <simulations/simulation.h>
-#include <automata/rules/factory.h>
-#include <automata/topologies.h>
 
+#include <utility>
+
+#include <automata/rules/factory.h>
 #include <automata/rules/rule_22_majority_memory.h>
+#include <automata/topologies.h>
 
 namespace cas::simulations {
 
@@ -65,10 +67,6 @@ void simulation::clean() {
 
 void simulation::set_boundary(automata::boundary_type boundary) {
     _automaton.set_boundary(boundary);
-}
-
-void simulation::set_random_seed(std::uint32_t seed) noexcept {
-    _automaton.set_random_seed(seed);
 }
 
 void simulation::set_rule(std::unique_ptr<automata::rules::rule> rule) {

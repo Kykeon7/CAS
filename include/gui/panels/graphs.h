@@ -3,8 +3,8 @@
 #include <gui/panels/panel.h>
 #include <gui/viewport_view.h>
 
-#include <span>
 #include <cstdint>
+#include <span>
 
 namespace cas::gui::panels {
 
@@ -27,10 +27,20 @@ struct graph_config {
     bool follow_latest = true;
 };
 
+/// @brief Displays historical simulation metrics as graphs.
 class graphs final : public panel {
 public:
     explicit graphs(viewport_view& view);
 
+    graphs(const graphs&) = delete;
+    graphs& operator=(const graphs&) = delete;
+
+    graphs(graphs&&) = delete;
+    graphs& operator=(graphs&&) = delete;
+
+    ~graphs() override = default;
+
+    /// @brief Renders the graph panel.
     void render() override;
 
 private:
@@ -49,6 +59,7 @@ private:
     void render_graph_controls(graph_config& config);
     void render_statistics(std::span<const float> history);
 
+private:
     viewport_view& _view;
 
     graph_config _population_config;

@@ -1,10 +1,11 @@
 #pragma once
 
+#include <functional>
+
 #include <files/dialog_service.h>
 #include <files/operation_handler.h>
+#include <files/serialization/progress.h>
 #include <workspace/workspace.h>
-
-#include <functional>
 
 namespace cas::files {
 
@@ -21,6 +22,7 @@ enum class result_status {
     save_as_requested
 };
 
+/// @brief Coordinates file requests between the UI and the operation handler.
 class coordinator {
 public:
     using progress_callback_factory =
@@ -31,6 +33,14 @@ public:
         operation_handler& operation_handler,
         workspace& workspace
     );
+
+    coordinator(const coordinator&) = default;
+    coordinator& operator=(const coordinator&) = delete;
+
+    coordinator(coordinator&&) = default;
+    coordinator& operator=(coordinator&&) = delete;
+
+    ~coordinator() = default;
 
     [[nodiscard]]
     request_status submit_request(

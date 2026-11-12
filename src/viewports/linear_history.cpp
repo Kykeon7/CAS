@@ -1,4 +1,3 @@
-
 #include <viewports/linear_history.h>
 
 #include <algorithm>

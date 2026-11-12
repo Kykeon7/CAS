@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <gui/panels/panel.h>
@@ -13,20 +14,28 @@ namespace cas::rendering {
 
 namespace cas::gui::panels {
 
-    class stats final : public panel {
-    public:
-        stats(
-            viewport_view& view,
-            const stats_panel_settings& settings,
-            rendering::context& rendering_context
-        );
+/// @brief Displays performance, memory, simulation, and GPU statistics.
+class stats final : public panel {
+public:
+    stats(
+        viewport_view& view,
+        const stats_panel_settings& settings,
+        rendering::context& rendering_context
+    );
 
-        void render() override;
+    stats(const stats&) = delete;
+    stats& operator=(const stats&) = delete;
+    stats(stats&&) = delete;
+    stats& operator=(stats&&) = delete;
+    ~stats() override = default;
 
-    private:
-        viewport_view& _view;
-        const stats_panel_settings& _settings;
-        rendering::context& _rendering_context;
-    };
+    /// @brief Renders the statistics panel.
+    void render() override;
+
+private:
+    viewport_view& _view;
+    const stats_panel_settings& _settings;
+    rendering::context& _rendering_context;
+};
 
 } // namespace cas::gui::panels

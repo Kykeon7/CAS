@@ -1,11 +1,10 @@
-
 #include <files/coordinator.h>
+
+#include <utility>
 
 #include <files/serialization/automaton.h>
 #include <files/serialization/viewport.h>
 #include <files/serialization/workspace.h>
-
-#include <utility>
 
 namespace cas::files {
 
@@ -13,10 +12,11 @@ coordinator::coordinator(
     dialog_service& dialog_service,
     operation_handler& operation_handler,
     workspace& workspace
-)
-    : _dialog_service(dialog_service),
-      _operation_handler(operation_handler),
-      _workspace(workspace) {
+) :
+    _dialog_service(dialog_service),
+    _operation_handler(operation_handler),
+    _workspace(workspace)
+{
 }
 
 request_status coordinator::submit_request(
@@ -32,11 +32,10 @@ request_status coordinator::submit_request(
     const auto target_viewport = viewports_manager.active_id();
     const auto& viewports = viewports_manager.viewports();
 
-    file_job job{
-        .operation = request.operation,
-        .path = request.path,
-        .target_viewport = target_viewport
-    };
+    file_job job;
+    job.operation = request.operation;
+    job.path = request.path;
+    job.target_viewport = target_viewport;
 
     switch (request.operation) {
     case file_operation::save_automaton: {

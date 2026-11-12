@@ -1,17 +1,17 @@
-
 #include <files/serialization/workspace.h>
 
 #include <nlohmann/json.hpp>
 
 #include <cmath>
+#include <cstdint>
 #include <fstream>
 #include <limits>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
-#include <cstdint>
 #include <vector>
+
 #include <files/serialization/json_file_reader.h>
 
 namespace cas::files::serialization {
@@ -91,6 +91,13 @@ std::uint64_t get_viewport_cell_count(
     const json& document
 ) {
     const auto& simulation = document.at("simulation");
+
+    if (!simulation.is_object()) {
+        throw std::runtime_error(
+            "Viewport simulation must be an object"
+        );
+    }
+
 
     const int width = simulation.at("width").get<int>();
     const int height = simulation.at("height").get<int>();
@@ -183,7 +190,6 @@ json save_workspace(
         capture_workspace(viewports, ui_scale)
     );
 }
-
 
 workspace_data load_workspace(
     const json& document,
@@ -302,9 +308,8 @@ workspace_data load_workspace(
 
     auto& slots = result.viewports.viewports();
 
-    for (auto& slot : slots) {
+    for (auto& slot : slots) 
         slot.reset();
-    }
 
     for (viewport_id id = 0;
         id < cas::viewports::manager::max_viewports;
@@ -380,8 +385,6 @@ void save_workspace_file(
         capture_workspace(viewports, ui_scale)
     );
 }
-
-
 
 workspace_data load_workspace_file(
     const std::filesystem::path& path,

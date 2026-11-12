@@ -6,7 +6,8 @@
 namespace cas::platform {
 
 gpu_device::gpu_device(window& window)
-    : window_(window) {
+    : window_(window)
+{
     constexpr SDL_GPUShaderFormat shader_formats =
         SDL_GPU_SHADERFORMAT_SPIRV |
         SDL_GPU_SHADERFORMAT_DXIL |

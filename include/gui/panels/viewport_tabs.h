@@ -1,15 +1,24 @@
 #pragma once
 
-#include <viewports/manager.h>
-
 #include <imgui.h>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstring>
 #include <string>
 #include <vector>
 
+#include <viewports/manager.h>
+
 namespace cas::gui::panels {
 
+/**
+ * @brief Renders and manages the viewport tabs.
+ *
+ * Supports selecting, creating, closing, and renaming viewports.
+ *
+ * @param viewports Viewport manager to operate on.
+ */
 inline void render_viewport_tabs(cas::viewports::manager& viewports) {
     static bool show_last_viewport_error = false;
     static cas::viewports::manager::viewport_id editing_id =
@@ -22,15 +31,18 @@ inline void render_viewport_tabs(cas::viewports::manager& viewports) {
     std::vector<cas::viewports::manager::viewport_id> to_close;
 
     if (ImGui::BeginTabBar("ViewportsTabs")) {
-        for (cas::viewports::manager::viewport_id id = 0;
+        for (
+            cas::viewports::manager::viewport_id id = 0;
             id < cas::viewports::manager::max_viewports;
-            ++id) {
+            ++id
+        ) {
             if (!viewports.exists(id))
                 continue;
 
-            auto& viewport = viewports.get(id);
+            auto& active_viewport = viewports.get(id);
+
             const std::string label =
-                viewport.name() + "###viewport_tab_" +
+                active_viewport.name() + "###viewport_tab_" +
                 std::to_string(id);
 
             bool open = true;
@@ -45,12 +57,14 @@ inline void render_viewport_tabs(cas::viewports::manager& viewports) {
                 editing_max = ImGui::GetItemRectMax();
             }
 
-            if (hovered &&
-                ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+            if (
+                hovered &&
+                ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)
+            ) {
                 editing_id = id;
 
-                const std::string& name = viewport.name();
-                const size_t length = std::min(
+                const std::string& name = active_viewport.name();
+                const std::size_t length = std::min(
                     name.size(),
                     sizeof(name_buffer) - 1
                 );
@@ -85,9 +99,10 @@ inline void render_viewport_tabs(cas::viewports::manager& viewports) {
         ImGui::EndTabBar();
     }
 
-    if (editing_id < cas::viewports::manager::max_viewports &&
-        viewports.exists(editing_id)) 
-    {
+    if (
+        editing_id < cas::viewports::manager::max_viewports &&
+        viewports.exists(editing_id)
+    ) {
         ImGui::SetNextWindowPos(editing_min);
         ImGui::SetNextWindowSize(
             ImVec2(
@@ -177,21 +192,15 @@ inline void render_viewport_tabs(cas::viewports::manager& viewports) {
         nullptr,
         ImGuiWindowFlags_AlwaysAutoResize
     )) {
-        ImGui::SetNextItemWidth(380.0f);
-
-        ImGui::Text(
-            "The last viewport cannot be closed."
-        );
-
-        ImGui::Text(
-            "At least one viewport must remain open."
-        );
+        ImGui::Text("The last viewport cannot be closed.");
+        ImGui::Text("At least one viewport must remain open.");
 
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
 
-        const float button_width = 120.0f;
+        constexpr float button_width = 120.0f;
+
         const float available_width =
             ImGui::GetContentRegionAvail().x;
 

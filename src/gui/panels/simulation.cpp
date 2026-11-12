@@ -1,28 +1,25 @@
-
 #include <gui/panels/simulation.h>
 
-#include <automata/rules/binary.h>
-
-#include <algorithm>
-#include <cstdio>
-#include <string>
-#include <utility>
-#include <random>
 #include <imgui.h>
 
-namespace cas::gui::panels {
+#include <algorithm>
+#include <random>
+#include <string>
+#include <utility>
 
+namespace cas::gui::panels {
 
 simulation::simulation(
     viewport_view& view,
     settings& settings,
     std::function<void(settings_tab)> open_settings
-)
-    : _view(view),
-      _settings(settings),
-      _open_settings(std::move(open_settings)) {
+) :
+    _view(view),
+    _rule_editor(),
+    _open_settings(std::move(open_settings)),
+    _settings(settings)
+{
 }
-
 
 void simulation::render() {
     auto& sim = _view.simulation();
@@ -48,7 +45,6 @@ void simulation::render() {
 
     ImGui::PopItemWidth();
 }
-
 
 void simulation::render_controls(cas::simulations::simulation& sim) {
     const ImVec2 button_size(-1.0f, 0.0f);

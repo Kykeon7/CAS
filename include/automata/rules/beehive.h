@@ -1,18 +1,39 @@
 #pragma once
 
-#include "rule.h"
-
 #include <array>
-#include <automata/cell_stats.h>
+
+#include <automata/rules/rule.h>
 
 namespace cas::automata::rules {
 
-class beehive : public rule {
+/// @brief Implements the Beehive cellular automaton rule.
+/// @details The rule supports three cell states: 0, 1, and 2.
+///          Its transition behavior is defined by a lookup table
+///          indexed by the number of neighboring cells in states
+///          1 and 2, excluding the center cell.
+///          The rule is designed for hexagonal neighborhoods
+///          with up to six neighbors.
+class beehive final : public rule {
 public:
+    beehive() = default;
+
+    beehive(const beehive&) = delete;
+    beehive& operator=(const beehive&) = delete;
+
+    beehive(beehive&&) = delete;
+    beehive& operator=(beehive&&) = delete;
+
+    ~beehive() override = default;
+
+    /// @brief Calculates the next state of a cell.
+    /// @param stats Statistics describing the cell and its neighborhood.
+    /// @return The resulting cell state.
     automata::cell_state next(
         const automata::cell_stats& stats
     ) const override;
 
+    /// @brief Returns the number of states supported by this rule.
+    /// @return Number of supported states.
     int state_count() const noexcept override;
 
 private:

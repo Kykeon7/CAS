@@ -3,27 +3,24 @@
 #include <chrono>
 #include <ctime>
 #include <iomanip>
+#include <iostream>
 #include <stdexcept>
 #include <system_error>
 
-#include <iostream>
-
 namespace cas::system {
 
-logger& logger::instance()
-{
+logger& logger::instance() {
     static logger instance;
     return instance;
 }
 
-logger::~logger()
-{
+logger::~logger() {
     shutdown();
 }
 
 void logger::initialize(
     const std::filesystem::path& path,
-    bool debug_mode
+    bool console_output
 )
 {
     std::lock_guard lock(_mutex);
@@ -39,7 +36,7 @@ void logger::initialize(
         std::filesystem::create_directories(
             parent,
             error_code
-        );
+        );  
 
         if (error_code) {
             throw std::filesystem::filesystem_error(
@@ -61,7 +58,7 @@ void logger::initialize(
         );
     }
 
-    _debug_mode = debug_mode;
+    _console_output = console_output;
     _initialized = true;
 
     // Do not call log() here: initialize already owns _mutex.
@@ -94,8 +91,7 @@ void logger::initialize(
     _file.flush();
 }
 
-void logger::shutdown()
-{
+void logger::shutdown() {
     std::lock_guard lock(_mutex);
 
     if (!_initialized)
@@ -155,7 +151,7 @@ void logger::log(
     if (level >= log_level::warn)
         _file.flush();
 
-    if (!_debug_mode)
+    if (!_console_output)
         return;
 
     auto& output = level >= log_level::warn
@@ -216,8 +212,7 @@ void logger::fatal(
     log(log_level::fatal, category, message);
 }
 
-std::string_view logger::level_name(log_level level)
-{
+std::string_view logger::level_name(log_level level) {
     switch (level) {
     case log_level::trace: return "TRACE";
     case log_level::debug: return "DEBUG";

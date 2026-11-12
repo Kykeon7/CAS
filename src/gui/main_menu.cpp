@@ -1,19 +1,21 @@
 #include <gui/main_menu.h>
 
 #include <imgui.h>
+
 #include <gui/help_content.h>
 
 namespace cas::gui {
 
 main_menu::main_menu(
     files::dialog_service& dialog_service,
-    gui::panels::collection& panels,
+    panels::collection& panels,
     settings& settings
-)
-    : _dialog_service(dialog_service),
-      _panels(panels),
-      _settings(settings)
-{}
+) :
+    _dialog_service(dialog_service),
+    _panels(panels),
+    _settings(settings)
+{
+}
 
 void main_menu::render(viewport_view& viewport_view) {
     if (!ImGui::BeginMainMenuBar())
@@ -34,17 +36,15 @@ void main_menu::render(viewport_view& viewport_view) {
             ImGui::EndMenu();
         }
 
-        if (ImGui::MenuItem("Reset Layout")) {
+        if (ImGui::MenuItem("Reset Layout"))
             _layout_reset_requested = true;
-        }
 
         ImGui::EndMenu();
     }
 
     if (ImGui::BeginMenu("Simulation")) {
-        if (ImGui::MenuItem("Clean")) {
+        if (ImGui::MenuItem("Clean"))
             viewport_view.simulation().clean();
-        }
 
         if (ImGui::MenuItem("Randomize")) {
             viewport_view.simulation().randomize(
@@ -92,7 +92,6 @@ void main_menu::render(viewport_view& viewport_view) {
 
     if (ImGui::BeginMenu("Help")) {
         _help_window_open = true;
-
         ImGui::EndMenu();
     }
 
@@ -180,4 +179,4 @@ bool main_menu::consume_layout_reset_request() noexcept {
     return requested;
 }
 
-} // namespace cas
+} // namespace cas::gui

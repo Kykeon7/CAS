@@ -1,20 +1,20 @@
-#include "automata/rules/binary.h"
+#include <automata/rules/binary.h>
 
 namespace cas::automata::rules {
 
 binary::binary(
     std::array<bool, 9> birth,
     std::array<bool, 9> survive
-)
-    : _birth(birth)
-    , _survive(survive)
+) :
+    _birth(birth),
+    _survive(survive)
 {
 }
 
 automata::cell_state binary::next(
     const automata::cell_stats& stats
 ) const {
-    int alive_neighbors =
+    const int alive_neighbors =
         stats.state_1 - (stats.center == 1);
 
     if (stats.center == 1)

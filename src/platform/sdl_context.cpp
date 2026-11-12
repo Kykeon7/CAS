@@ -7,9 +7,8 @@ namespace cas::platform {
 sdl_context::sdl_context(Uint32 flags)
     : _flags(flags)
 {
-    if (!SDL_Init(flags)) {
+    if (!SDL_Init(flags)) 
         throw std::runtime_error(SDL_GetError());
-    }
 }
 
 sdl_context::~sdl_context() {

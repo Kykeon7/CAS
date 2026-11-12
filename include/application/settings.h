@@ -53,8 +53,6 @@ struct settings {
     randomization_settings randomization;
     interface_settings interface;
     stats_panel_settings stats;
-
-    rendering::backend rendering_backend = rendering::backend::gpu;
 };
 
 } // namespace cas

@@ -1,11 +1,7 @@
-
 #pragma once
-
-#include <files/serialization/progress.h>
 
 #include <nlohmann/json.hpp>
 
-#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <filesystem>
@@ -13,9 +9,18 @@
 #include <stdexcept>
 #include <string>
 #include <system_error>
+#include <vector>
+
+#include <files/serialization/progress.h>
 
 namespace cas::files::serialization {
 
+/// @brief Reads and parses a JSON file.
+/// @param path Path to the JSON file.
+/// @param on_progress Optional callback invoked as bytes are read.
+/// @return Parsed JSON document.
+/// @throws std::runtime_error If the file cannot be accessed or read.
+/// @throws nlohmann::json::parse_error If the file contains invalid JSON.
 [[nodiscard]]
 inline nlohmann::json read_json_file(
     const std::filesystem::path& path,
@@ -32,6 +37,12 @@ inline nlohmann::json read_json_file(
         );
     }
 
+    if (file_size > std::string{}.max_size()) {
+        throw std::runtime_error(
+            "File is too large to read: " + path.string()
+        );
+    }
+
     std::ifstream file(path, std::ios::binary);
 
     if (!file.is_open()) {
@@ -40,15 +51,9 @@ inline nlohmann::json read_json_file(
         );
     }
 
-    if (file_size > std::string{}.max_size()) {
-        throw std::runtime_error(
-            "File is too large to read: " + path.string()
-        );
-    }
-
     constexpr std::size_t buffer_size = 64 * 1024;
 
-    std::array<char, buffer_size> buffer{};
+    std::vector<char> buffer(buffer_size);
     std::string contents;
 
     contents.reserve(static_cast<std::size_t>(file_size));
@@ -56,9 +61,8 @@ inline nlohmann::json read_json_file(
     const auto total = static_cast<std::uint64_t>(file_size);
     std::uint64_t completed = 0;
 
-    if (on_progress) {
+    if (on_progress)
         on_progress(completed, total);
-    }
 
     while (true) {
         file.read(
@@ -76,9 +80,8 @@ inline nlohmann::json read_json_file(
 
             completed += static_cast<std::uint64_t>(bytes_read);
 
-            if (on_progress) {
+            if (on_progress)
                 on_progress(completed, total);
-            }
         }
 
         if (file.bad()) {
@@ -87,9 +90,8 @@ inline nlohmann::json read_json_file(
             );
         }
 
-        if (file.eof()) {
+        if (file.eof())
             break;
-        }
 
         if (file.fail()) {
             throw std::runtime_error(

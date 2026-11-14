@@ -159,7 +159,6 @@ public:
      * @return The most recently recorded change, or std::nullopt if
      *         no change is pending.
      */
-    [[nodiscard]]
     std::optional<active_viewport_change>
         consume_active_change() noexcept;
 

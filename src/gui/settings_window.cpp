@@ -96,6 +96,34 @@ settings_window::settings_window(
     reset_randomization_draft();
 }
 
+void settings_window::set_active_backend(
+    rendering::backend backend,
+    bool gpu_fallback
+) noexcept {
+    _active_backend = backend;
+    _gpu_fallback = gpu_fallback;
+}
+
+void settings_window::request_backend_change(
+    rendering::backend backend
+) {
+    if (_settings.rendering.backend == backend)
+        return;
+
+    _notifications.confirm(
+        "Change Rendering Backend",
+        "Changing the rendering backend requires restarting CAS. "
+        "Save any unsaved work before restarting. "
+        "The selected backend will be used the next time CAS starts. "
+        "Do you want to continue?",
+        [this, backend](bool confirmed) {
+            if (confirmed)
+                _settings.rendering.backend = backend;
+        },
+        "Continue"
+    );
+}
+
 void settings_window::set_save_directory(
     std::filesystem::path path
 ) {
@@ -559,6 +587,46 @@ void settings_window::render_general() {
     ImGui::TextDisabled(
         "Automatically loads the last successfully opened workspace."
     );
+
+    ImGui::Separator();
+
+    // Rendering
+    ImGui::Text("Rendering");
+
+    const char* selected_backend =
+        _settings.rendering.backend == rendering::backend::gpu
+        ? "GPU"
+        : "CPU";
+
+    if (ImGui::BeginCombo("Rendering backend", selected_backend)) {
+        const bool cpu_selected =
+            _settings.rendering.backend == rendering::backend::cpu;
+
+        if (ImGui::Selectable("CPU", cpu_selected))
+            request_backend_change(rendering::backend::cpu);
+
+        const bool gpu_selected =
+            _settings.rendering.backend == rendering::backend::gpu;
+
+        if (ImGui::Selectable("GPU", gpu_selected))
+            request_backend_change(rendering::backend::gpu);
+
+        ImGui::EndCombo();
+    }
+
+    if (_settings.rendering.backend != _active_backend) {
+        ImGui::TextDisabled(
+            "Restart CAS to apply the rendering backend change."
+        );
+    }
+
+    if (_gpu_fallback
+        && _settings.rendering.backend == rendering::backend::gpu) {
+        ImGui::TextWrapped(
+            "GPU initialization failed. CAS is using the CPU backend "
+            "for this session and will try GPU again on the next launch."
+        );
+    }
 
     ImGui::Separator();
 

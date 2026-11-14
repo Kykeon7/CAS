@@ -57,7 +57,7 @@ std::filesystem::path get_application_directory() {
 
 namespace cas {
 
-application::application(rendering::backend backend)
+application::application()
     : _workspace(_settings.interface.scale),
       _window("CAS - Cellular Automaton Simulator"),
       _file_dialog_service(_window),
@@ -66,7 +66,7 @@ application::application(rendering::backend backend)
           _file_operation_handler,
           _workspace
       ),
-      _rendering_context(_window, backend),
+      _rendering_context(_window, rendering::backend::gpu),
       _settings_window(
           _settings,
           _notifications,
@@ -115,6 +115,9 @@ application::application(rendering::backend backend)
             _settings = {};
         }
     }
+
+    // Apply the backend preference loaded from the settings file.
+    _rendering_context.set_backend(_settings.rendering.backend);
 
     // Configure the default workspace directory.
     if (_settings.default_save_directory.empty()) {
@@ -181,6 +184,12 @@ application::application(rendering::backend backend)
     update_window_title();
 
     initialize_backend();
+
+    _settings_window.set_active_backend(
+        _rendering_context.backend(),
+        _settings.rendering.backend == rendering::backend::gpu
+            && _rendering_context.is_cpu_backend()
+    );
 
     _gui->apply_interface_settings(_settings.interface);
 
@@ -522,6 +531,33 @@ void application::initialize_backend() {
     auto& logger = system::logger::instance();
     auto& viewport = _workspace.viewports().active_viewport();
 
+    const auto initialize_selected_backend = [this, &viewport]() {
+        _rendering_context.initialize(viewport.camera());
+
+        if (auto* renderer = _rendering_context.cpu_renderer()) {
+            _gui = std::make_unique<gui::manager>(
+                _window,
+                *renderer
+            );
+            return;
+        }
+
+        auto* device = _rendering_context.gpu_device();
+        _gui = std::make_unique<gui::manager>(*device);
+
+        const char* device_name = device->name();
+
+        system::logger::instance().info(
+            "Renderer",
+            "GPU backend initialized: " +
+            std::string(
+                device_name != nullptr
+                ? device_name
+                : "Unknown"
+            )
+        );
+    };
+
     logger.info(
         "Renderer",
         _rendering_context.is_cpu_backend()
@@ -529,33 +565,37 @@ void application::initialize_backend() {
         : "Initializing GPU rendering backend."
     );
 
-    _rendering_context.initialize(viewport.camera());
-
-    if (auto* renderer = _rendering_context.cpu_renderer()) {
-        _gui = std::make_unique<gui::manager>(
-            _window,
-            *renderer
-        );
-
+    if (_rendering_context.is_cpu_backend()) {
+        initialize_selected_backend();
         logger.info("Renderer", "CPU backend initialized.");
         return;
     }
 
-    auto* device = _rendering_context.gpu_device();
+    try {
+        initialize_selected_backend();
+    }
+    catch (const std::exception& exception) {
+        logger.warn(
+            "Renderer",
+            "GPU initialization failed. Falling back to CPU: "
+            + std::string(exception.what())
+        );
 
-    _gui = std::make_unique<gui::manager>(*device);
+        _gui.reset();
+        _rendering_context.reset_backend(rendering::backend::cpu);
+        initialize_selected_backend();
 
-    const char* device_name = device->name();
+        logger.info(
+            "Renderer",
+            "CPU backend initialized as a fallback."
+        );
 
-    logger.info(
-        "Renderer",
-        "GPU backend initialized: " +
-        std::string(
-            device_name != nullptr
-            ? device_name
-            : "Unknown"
-        )
-    );
+        _notifications.warning(
+            "Rendering",
+            "GPU initialization failed. CAS is using the CPU backend. "
+            "The application will try GPU again on the next launch."
+        );
+    }
 }
 
 void application::rebuild_panels() {
@@ -616,8 +656,6 @@ void application::process_file_request(
 
         return;
     }
-
-    // El resto de tu implementación actual continúa aquí.
 
     const auto make_progress_callback =
         [this](file_operation operation) {
@@ -911,16 +949,12 @@ void application::process_file_result(
 
         auto& simulation = target.simulation();
 
-        // Detener la simulación antes de reemplazar el autómata.
         if (simulation.is_running()) {
             simulation.toggle();
         }
 
-        // Instalar el autómata cargado.
         simulation.automaton() = std::move(**loaded);
 
-        // Limpiar los historiales para evitar mezclar datos
-        // del autómata anterior con los del nuevo.
         target.population_history().clear();
         target.density_history().clear();
         target.activity_history().clear();
@@ -1046,7 +1080,7 @@ void application::process_file_result(
         break;
 
     case file_operation_action::failed:
-        // Los errores ya se gestionaron al inicio del método.
+        // Los errores ya se gestionaron al inicio del m?todo.
         break;
     }
 }
@@ -1256,7 +1290,8 @@ void application::request_exit_confirmation() {
 
             if (confirmed)
                 _is_running = false;
-        }
+        },
+        "Exit"
     );
 }
 

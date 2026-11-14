@@ -119,7 +119,8 @@ public:
     void confirm(
         std::string_view category,
         std::string_view message,
-        std::function<void(bool)> on_result
+        std::function<void(bool)> on_result,
+        std::string_view confirm_label = "Confirm"
     );
 
     /**
@@ -187,11 +188,13 @@ private:
         notification value;
         notification_id id = 0;
         std::function<void(bool)> on_result;
+        std::string confirm_label;
     };
 
     struct confirmation {
         notification value;
         std::function<void(bool)> on_result;
+        std::string confirm_label;
     };
 
     void enqueue(
@@ -214,6 +217,7 @@ private:
 
     std::optional<notification> _active_error;
     std::optional<confirmation> _confirmation;
+    std::deque<confirmation> _confirmation_queue;
 
     notification_id _next_id = 1;
     bool _error_popup_open_requested = false;

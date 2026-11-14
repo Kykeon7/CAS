@@ -92,7 +92,8 @@ void notifications::error(
 void notifications::confirm(
     std::string_view category,
     std::string_view message,
-    std::function<void(bool)> on_result
+    std::function<void(bool)> on_result,
+    std::string_view confirm_label
 ) {
     notification item{
         .id = 0,
@@ -109,7 +110,8 @@ void notifications::confirm(
         .type = command_type::confirm,
         .value = std::move(item),
         .id = 0,
-        .on_result = std::move(on_result)
+        .on_result = std::move(on_result),
+        .confirm_label = std::string(confirm_label)
         });
 }
 
@@ -236,12 +238,11 @@ void notifications::render() {
 
     for (auto& item : pending) {
         if (item.type == command_type::confirm) {
-            if (!_confirmation.has_value()) {
-                _confirmation = confirmation{
-                    .value = std::move(item.value),
-                    .on_result = std::move(item.on_result)
-                };
-            }
+            _confirmation_queue.push_back({
+                .value = std::move(item.value),
+                .on_result = std::move(item.on_result),
+                .confirm_label = std::move(item.confirm_label)
+            });
 
             continue;
         }
@@ -293,6 +294,11 @@ void notifications::render() {
                 .expires_at = expires_at
                 });
         }
+    }
+
+    if (!_confirmation.has_value() && !_confirmation_queue.empty()) {
+        _confirmation = std::move(_confirmation_queue.front());
+        _confirmation_queue.pop_front();
     }
 
     const auto now = std::chrono::steady_clock::now();
@@ -391,7 +397,6 @@ void notifications::render_blocking() {
         ImVec2(0.5f, 0.5f)
     );
 
-    // Tamaño estable, no depende de las dimensiones del contenido.
     ImGui::SetNextWindowSize(
         ImVec2(420.0f, 170.0f),
         ImGuiCond_Appearing
@@ -574,7 +579,10 @@ void notifications::render_confirmation() {
 
         ImGui::SameLine();
 
-        if (ImGui::Button("Exit", ImVec2(button_width, 0.0f))) {
+        if (ImGui::Button(
+            _confirmation->confirm_label.c_str(),
+            ImVec2(button_width, 0.0f)
+        )) {
             completed = true;
             confirmed = true;
         }

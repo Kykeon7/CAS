@@ -1,8 +1,9 @@
 #include <application/application.h>
-#include <application/settings.h>
 
 #include <exception>
+#include <stdexcept>
 
+#include <system/console.h>
 #include <system/logger.h>
 
 int main(int argc, char* argv[]) {
@@ -11,19 +12,21 @@ int main(int argc, char* argv[]) {
 
     auto& logger = cas::system::logger::instance();
 
-    constexpr bool console_output = true;
+    constexpr bool console_output = false;
 
     try {
+        if (!cas::system::set_console_enabled(console_output))
+            throw std::runtime_error("Failed to configure console.");
+
         logger.initialize("logs/cas.log", console_output);
 
         logger.info("Application", "Starting CAS.");
 
         {
-            cas::application app(cas::rendering::backend::gpu);
+            cas::application app;
             app.run();
         }
 
-        // La aplicación ya se destruyó y guardó su workspace.
         logger.info("Application", "CAS shutdown completed.");
 
         logger.shutdown();

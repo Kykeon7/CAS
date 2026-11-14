@@ -50,13 +50,8 @@ public:
      * Initializes SDL, creates the application window, loads application
      * settings, configures the workspace, initializes the rendering backend,
      * and constructs the GUI.
-     *
-     * @param backend Rendering backend to initialize.
      */
-    explicit application(
-        rendering::backend backend =
-            rendering::backend::gpu
-    );
+    application();
 
     /**
      * @brief Shuts down the application and saves persistent state.

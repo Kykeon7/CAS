@@ -14,7 +14,7 @@ El proyecto utiliza CMake y vcpkg para gestionar la compilación y las dependenc
 - Visualización de datos y gráficas mediante ImPlot.
 - Arquitectura modular.
 - Sistema de compilación multiplataforma con CMake.
-- Gestión de dependencias externas mediante vcpkg.
+- Gestión de dependencias externas mediante vcpkg y Git Submodules.
 
 ---
 
@@ -35,10 +35,32 @@ El proyecto utiliza CMake y vcpkg para gestionar la compilación y las dependenc
 |---|---|
 | SDL3 | vcpkg |
 | nlohmann_json | vcpkg |
-| Dear ImGui | Incluida en `external/imgui` |
-| ImPlot | Incluida en `external/implot` |
+| Dear ImGui | Git Submodule (`external/imgui`) |
+| ImPlot | Git Submodule (`external/implot`) |
 
-Dear ImGui e ImPlot se compilan directamente desde el código fuente incluido en el repositorio. No es necesario instalarlos mediante vcpkg.
+Dear ImGui e ImPlot se compilan directamente desde sus respectivos submódulos. No es necesario instalarlos mediante vcpkg.
+
+### Clonación del repositorio
+
+Es necesario inicializar los submódulos para obtener el código fuente de Dear ImGui e ImPlot.
+
+Se recomienda clonar el repositorio utilizando `--recurse-submodules`:
+
+```bash
+git clone --recurse-submodules https://github.com/Kykeon7/CAS.git
+```
+
+Para clonar una rama específica:
+
+```bash
+git clone --recurse-submodules -b cmake-migration https://github.com/Kykeon7/CAS.git
+```
+
+Si el repositorio ya fue clonado sin inicializar los submódulos, ejecutar:
+
+```bash
+git submodule update --init --recursive
+```
 
 ---
 
@@ -46,10 +68,9 @@ Dear ImGui e ImPlot se compilan directamente desde el código fuente incluido en
 
 ## 1. Clonar el repositorio
 
-```bash
-git clone https://github.com/TU_USUARIO/CAS.git
+```powershell
+git clone --recurse-submodules -b cmake-migration https://github.com/Kykeon7/CAS.git
 cd CAS
-git checkout cmake-migration
 ```
 
 ## 2. Instalar vcpkg
@@ -126,9 +147,8 @@ echo 'export VCPKG_ROOT="$HOME/vcpkg"' >> ~/.bashrc
 ## 3. Clonar el repositorio
 
 ```bash
-git clone https://github.com/TU_USUARIO/CAS.git
+git clone --recurse-submodules -b cmake-migration https://github.com/Kykeon7/CAS.git
 cd CAS
-git checkout cmake-migration
 ```
 
 ## 4. Configurar el proyecto
@@ -159,6 +179,7 @@ cmake --build build
 CAS/
 ├── CMakeLists.txt
 ├── vcpkg.json
+├── .gitmodules
 ├── external/
 │   ├── imgui/
 │   └── implot/
@@ -186,6 +207,7 @@ El proyecto utiliza:
 - **nlohmann_json** para el manejo de datos JSON.
 - **CMake** para la configuración y generación del sistema de compilación.
 - **vcpkg** para la gestión de dependencias externas.
+- **Git Submodules** para mantener Dear ImGui e ImPlot vinculados a versiones específicas.
 
 ### Configuraciones de compilación
 

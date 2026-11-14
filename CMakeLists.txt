@@ -222,7 +222,7 @@ add_executable(CAS
     src/viewports/camera.cpp
     src/viewports/manager.cpp
     src/viewports/viewport.cpp
- "src/workspace/workspace.cpp" "src/files/coordinator.cpp" "src/viewports/linear_history.cpp")
+ "src/workspace/workspace.cpp" "src/files/coordinator.cpp" "src/viewports/linear_history.cpp" "src/system/console.cpp")
 
 # ============================================================
 # Include directories

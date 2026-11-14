@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <array>
@@ -59,6 +58,17 @@ public:
     void set_save_directory(std::filesystem::path path);
 
     /**
+     * @brief Sets the backend currently active for this application session.
+     *
+     * @param backend Active rendering backend.
+     * @param gpu_fallback Whether GPU initialization failed and CPU is in use.
+     */
+    void set_active_backend(
+        rendering::backend backend,
+        bool gpu_fallback = false
+    ) noexcept;
+
+    /**
      * @brief Opens the settings window and selects a tab.
      *
      * @param tab Tab to select.
@@ -71,6 +81,8 @@ public:
     void render();
 
 private:
+    void request_backend_change(rendering::backend backend);
+
     void render_general();
     void render_simulation();
     void render_appearance();
@@ -98,6 +110,8 @@ private:
 private:
     settings& _settings;
     notifications& _notifications;
+    rendering::backend _active_backend = rendering::backend::gpu;
+    bool _gpu_fallback = false;
     std::optional<std::reference_wrapper<viewport_view>> _view;
 
     bool _is_open = false;

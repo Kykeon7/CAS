@@ -52,6 +52,24 @@ void validate_randomization(
     }
 }
 
+std::string_view to_string(rendering::backend backend) {
+    switch (backend) {
+    case rendering::backend::cpu: return "cpu";
+    case rendering::backend::gpu: return "gpu";
+    }
+
+    throw std::runtime_error("Invalid rendering backend");
+}
+
+rendering::backend rendering_backend_from_string(
+    const std::string& value
+) {
+    if (value == "cpu") return rendering::backend::cpu;
+    if (value == "gpu") return rendering::backend::gpu;
+
+    throw std::runtime_error("Invalid rendering backend");
+}
+
 std::string_view to_string(ui_theme theme) {
     switch (theme) {
     case ui_theme::dark:    return "dark";
@@ -107,6 +125,7 @@ void validate_settings(
         settings.workspace_filename
     );
 
+    to_string(settings.rendering.backend);
     validate_randomization(settings.randomization);
     validate_interface(settings.interface);
 }
@@ -143,6 +162,11 @@ json save_application_settings(
         {
             "save_imgui_layout",
             settings.save_imgui_layout
+        },
+        {
+            "rendering", {
+                { "backend", to_string(settings.rendering.backend) }
+            }
         },
         {
             "randomization", {
@@ -225,6 +249,16 @@ settings load_application_settings(
     if (document.contains("save_imgui_layout")) {
         result.save_imgui_layout =
             document.at("save_imgui_layout").get<bool>();
+    }
+
+    if (document.contains("rendering")) {
+        const auto& rendering = document.at("rendering");
+
+        if (rendering.contains("backend")) {
+            result.rendering.backend = rendering_backend_from_string(
+                rendering.at("backend").get<std::string>()
+            );
+        }
     }
 
     if (document.contains("randomization")) {

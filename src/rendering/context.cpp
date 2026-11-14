@@ -46,6 +46,34 @@ bool context::is_gpu_backend() const noexcept {
     return _backend == backend::gpu;
 }
 
+void context::set_backend(rendering::backend backend) {
+    if (_initialized) {
+        throw std::logic_error(
+            "Cannot change the rendering backend after initialization."
+        );
+    }
+
+    if (_backend == backend)
+        return;
+
+    if (backend == rendering::backend::cpu)
+        _resources.emplace<cpu_backend>();
+    else
+        _resources.emplace<gpu_backend>();
+
+    _backend = backend;
+}
+
+void context::reset_backend(rendering::backend backend) {
+    if (backend == rendering::backend::cpu)
+        _resources.emplace<cpu_backend>();
+    else
+        _resources.emplace<gpu_backend>();
+
+    _backend = backend;
+    _initialized = false;
+}
+
 void context::initialize(cas::viewports::camera& initial_camera) {
     if (_initialized) {
         throw std::logic_error(

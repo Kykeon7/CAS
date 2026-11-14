@@ -19,8 +19,8 @@ void render_help_content() {
     ImGui::Bullet();
     ImGui::SameLine();
     ImGui::TextWrapped(
-        "Press R to randomize the cell states and generate "
-        "an initial configuration."
+        "Press CTRL + SHIFT + R to randomize the cell states "
+        "and generate an initial configuration."
     );
 
     ImGui::Spacing();
@@ -39,8 +39,8 @@ void render_help_content() {
     ImGui::Bullet();
     ImGui::SameLine();
     ImGui::TextWrapped(
-        "Press SPACE to start the simulation and observe "
-        "how the automaton evolves over time."
+        "Press CTRL + SHIFT + SPACE to start the simulation "
+        "and observe how the automaton evolves over time."
     );
 
     ImGui::Spacing();
@@ -49,7 +49,7 @@ void render_help_content() {
     ImGui::Bullet();
     ImGui::SameLine();
     ImGui::TextWrapped(
-        "Press SPACE again to pause the simulation. "
+        "Press CTRL + SHIFT + SPACE again to pause the simulation. "
         "You can then modify the cell states and try "
         "different initial configurations."
     );
@@ -62,19 +62,27 @@ void render_help_content() {
 
     ImGui::Bullet();
     ImGui::SameLine();
-    ImGui::TextWrapped("SPACE: Start / Pause simulation");
+    ImGui::TextWrapped(
+        "CTRL + SHIFT + SPACE: Start / Pause simulation"
+    );
 
     ImGui::Bullet();
     ImGui::SameLine();
-    ImGui::TextWrapped("R: Randomize cell states");
+    ImGui::TextWrapped(
+        "CTRL + SHIFT + R: Randomize cell states (Custom)"
+    );
 
     ImGui::Bullet();
     ImGui::SameLine();
-    ImGui::TextWrapped("Mouse click: Change a cell state");
+    ImGui::TextWrapped(
+        "CTRL + SHIFT + Q: Exit application"
+    );
 
     ImGui::Bullet();
     ImGui::SameLine();
-    ImGui::TextWrapped("ESC: Exit application");
+    ImGui::TextWrapped(
+        "Mouse click: Change a cell state"
+    );
 
     ImGui::Spacing();
     ImGui::Spacing();

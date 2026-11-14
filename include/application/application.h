@@ -50,13 +50,8 @@ public:
      * Initializes SDL, creates the application window, loads application
      * settings, configures the workspace, initializes the rendering backend,
      * and constructs the GUI.
-     *
-     * @param backend Rendering backend to initialize.
      */
-    explicit application(
-        rendering::backend backend =
-            rendering::backend::gpu
-    );
+    application();
 
     /**
      * @brief Shuts down the application and saves persistent state.
@@ -87,6 +82,13 @@ private:
      * and GUI systems.
      */
     void process_events();
+
+    /**
+     * @brief Processes application-wide keyboard shortcuts.
+     *
+     * Handles simulation controls and application exit requests.
+     */
+    void process_input();
 
     /**
      * @brief Updates the application state.
@@ -201,6 +203,11 @@ private:
      */
     void start_initial_workspace_load();
 
+    /**
+     * @brief Requests confirmation before closing the application.
+     */
+    void request_exit_confirmation();
+
 private:
     settings _settings;
 
@@ -225,7 +232,9 @@ private:
     viewports::manager::viewport_id _prev_active_viewport = 0;
 
     inputs::input _input;
+
     bool _is_running = false;
+    bool _exit_confirmation_pending = false;
 
     gui::panels::collection _panels;
     std::unique_ptr<gui::layout> _layout;

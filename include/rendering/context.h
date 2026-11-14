@@ -92,6 +92,24 @@ public:
     void initialize(cas::viewports::camera& initial_camera);
 
     /**
+     * Selects a backend before the context is initialized.
+     *
+     * @param backend Backend to select.
+     * @throws std::logic_error If the context has already been initialized.
+     */
+    void set_backend(rendering::backend backend);
+
+    /**
+     * Replaces the backend resources and returns the context to an uninitialized state.
+     *
+     * All renderers and other resources depending on this context must be
+     * destroyed before calling this function.
+     *
+     * @param backend Backend to select.
+     */
+    void reset_backend(rendering::backend backend);
+
+    /**
      * Checks whether the context has been initialized.
      *
      * @return True if initialization has completed successfully.

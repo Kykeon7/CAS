@@ -5,6 +5,8 @@
 #include <filesystem>
 #include <string>
 
+#include <rendering/backend.h>
+
 namespace cas {
 
 enum class ui_theme {
@@ -32,6 +34,10 @@ struct interface_settings {
     float scale = 1.0f;
 };
 
+struct rendering_settings {
+    rendering::backend backend = rendering::backend::gpu;
+};
+
 struct randomization_settings {
     std::array<std::uint32_t, 2> two_states{ 50, 50 };
     std::array<std::uint32_t, 3> three_states{ 34, 33, 33 };
@@ -50,6 +56,7 @@ struct settings {
     bool save_workspace_on_exit = true;
     bool save_imgui_layout = true;
 
+    rendering_settings rendering;
     randomization_settings randomization;
     interface_settings interface;
     stats_panel_settings stats;

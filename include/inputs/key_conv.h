@@ -16,7 +16,14 @@ constexpr key sdl_to_key(SDL_Scancode sc) {
     case SDL_SCANCODE_SPACE:  return key::space;
     case SDL_SCANCODE_ESCAPE: return key::escape;
     case SDL_SCANCODE_R:      return key::R;
+    case SDL_SCANCODE_Q:      return key::Q;
     case SDL_SCANCODE_F11:    return key::F11;
+    case SDL_SCANCODE_LCTRL:  return key::left_ctrl;
+    case SDL_SCANCODE_RCTRL:  return key::right_ctrl;
+    case SDL_SCANCODE_LALT:   return key::left_alt;
+    case SDL_SCANCODE_RALT:   return key::right_alt;
+    case SDL_SCANCODE_LSHIFT: return key::left_shift;
+    case SDL_SCANCODE_RSHIFT: return key::right_shift;
     default:                  return key::unknown;
     }
 }
@@ -24,15 +31,22 @@ constexpr key sdl_to_key(SDL_Scancode sc) {
 /** Converts an input key to the corresponding SDL scancode. */
 constexpr SDL_Scancode key_to_sdl(key key) {
     switch (key) {
-    case key::W:      return SDL_SCANCODE_W;
-    case key::A:      return SDL_SCANCODE_A;
-    case key::S:      return SDL_SCANCODE_S;
-    case key::D:      return SDL_SCANCODE_D;
-    case key::space:  return SDL_SCANCODE_SPACE;
-    case key::escape: return SDL_SCANCODE_ESCAPE;
-    case key::R:      return SDL_SCANCODE_R;
-    case key::F11:    return SDL_SCANCODE_F11;
-    default:          return SDL_SCANCODE_UNKNOWN;
+    case key::W:          return SDL_SCANCODE_W;
+    case key::A:          return SDL_SCANCODE_A;
+    case key::S:          return SDL_SCANCODE_S;
+    case key::D:          return SDL_SCANCODE_D;
+    case key::space:      return SDL_SCANCODE_SPACE;
+    case key::escape:     return SDL_SCANCODE_ESCAPE;
+    case key::R:          return SDL_SCANCODE_R;
+    case key::Q:          return SDL_SCANCODE_Q;
+    case key::F11:        return SDL_SCANCODE_F11;
+    case key::left_ctrl:  return SDL_SCANCODE_LCTRL;
+    case key::right_ctrl: return SDL_SCANCODE_RCTRL;
+    case key::left_alt:   return SDL_SCANCODE_LALT;
+    case key::right_alt:  return SDL_SCANCODE_RALT;
+    case key::left_shift: return SDL_SCANCODE_LSHIFT;
+    case key::right_shift:return SDL_SCANCODE_RSHIFT;
+    default:              return SDL_SCANCODE_UNKNOWN;
     }
 }
 

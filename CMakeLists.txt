@@ -1,3 +1,4 @@
+
 cmake_minimum_required(VERSION 3.21)
 
 project(CAS LANGUAGES CXX)
@@ -20,13 +21,17 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+if(WIN32)
+    enable_language(RC)
+endif()
+
+include(GNUInstallDirs)
 
 # ============================================================
 # Dependencies
 # ============================================================
 
 find_package(SDL3 CONFIG REQUIRED)
-
 find_package(nlohmann_json CONFIG REQUIRED)
 
 # ============================================================
@@ -73,7 +78,7 @@ target_link_libraries(implot PUBLIC
 )
 
 # ============================================================
-# Platform-specific system implementations
+# Platform-specific configuration
 # ============================================================
 
 set(CAS_SYSTEM_SOURCES)
@@ -95,7 +100,6 @@ else()
         "Unsupported platform: ${CMAKE_SYSTEM_NAME}"
     )
 endif()
-
 
 # ============================================================
 # CAS executable
@@ -124,11 +128,11 @@ add_executable(CAS
     src/automata/topology.cpp
 
     # Rules
-    "src/automata/rules/beehive.cpp"
-    "src/automata/rules/binary.cpp"
+    src/automata/rules/beehive.cpp
+    src/automata/rules/binary.cpp
     src/automata/rules/factory.cpp
     src/automata/rules/rule_22_majority_memory.cpp
-    "src/automata/rules/spiral.cpp"
+    src/automata/rules/spiral.cpp
 
     # --------------------------------------------------------
     # Files
@@ -136,12 +140,13 @@ add_executable(CAS
 
     src/files/dialog_service.cpp
     src/files/operation_handler.cpp
+    src/files/coordinator.cpp
 
     # Serialization
-    "src/files/serialization/settings.cpp"
-    "src/files/serialization/automaton.cpp"
-    "src/files/serialization/viewport.cpp"
-    "src/files/serialization/workspace.cpp"
+    src/files/serialization/settings.cpp
+    src/files/serialization/automaton.cpp
+    src/files/serialization/viewport.cpp
+    src/files/serialization/workspace.cpp
 
     # --------------------------------------------------------
     # GUI
@@ -152,14 +157,14 @@ add_executable(CAS
     src/gui/layout.cpp
     src/gui/main_menu.cpp
     src/gui/manager.cpp
-    "src/gui/notifications.cpp"
-    "src/gui/panels/container.cpp"
+    src/gui/notifications.cpp
     src/gui/rule_editor.cpp
     src/gui/settings_window.cpp
     src/gui/style.cpp
 
     # Panels
     src/gui/panels/appearance.cpp
+    src/gui/panels/container.cpp
     src/gui/panels/file.cpp
     src/gui/panels/graphs.cpp
     src/gui/panels/help.cpp
@@ -211,18 +216,32 @@ add_executable(CAS
     src/system/logger.cpp
     src/system/profiler.cpp
     src/system/time.cpp
+    src/system/console.cpp
 
-    # Platform-specific memory and GPU memory implementations
+    # Platform-specific implementations
     ${CAS_SYSTEM_SOURCES}
 
     # --------------------------------------------------------
-    # Viewports
+    # Viewports and workspace
     # --------------------------------------------------------
 
     src/viewports/camera.cpp
     src/viewports/manager.cpp
     src/viewports/viewport.cpp
- "src/workspace/workspace.cpp" "src/files/coordinator.cpp" "src/viewports/linear_history.cpp" "src/system/console.cpp")
+    src/viewports/linear_history.cpp
+
+    src/workspace/workspace.cpp
+)
+
+# ============================================================
+# Platform-specific application resources
+# ============================================================
+
+if(WIN32)
+    target_sources(CAS PRIVATE
+        resources/icons/CAS.rc
+    )
+endif()
 
 # ============================================================
 # Include directories
@@ -231,7 +250,6 @@ add_executable(CAS
 target_include_directories(CAS PRIVATE
     include
 )
-
 
 # ============================================================
 # Link libraries
@@ -243,13 +261,13 @@ target_link_libraries(CAS PRIVATE
     implot
     nlohmann_json::nlohmann_json
 )
+
 if(WIN32)
     target_link_libraries(CAS PRIVATE
         Psapi
         dxgi
     )
 endif()
-
 
 # ============================================================
 # Compiler warnings
@@ -266,27 +284,31 @@ endif()
 # Runtime resources
 # ============================================================
 
+# ------------------------------------------------------------
+# GPU shaders
+# ------------------------------------------------------------
+
 file(GLOB CAS_SHADER_FILES CONFIGURE_DEPENDS
     "${CMAKE_SOURCE_DIR}/resources/shaders/*"
 )
 
 set(CAS_SHADER_OUTPUT_DIR
-    "$<TARGET_FILE_DIR:CAS>/resources/shaders"
+    "${CMAKE_CURRENT_BINARY_DIR}/shader_resources"
 )
 
 set(CAS_SHADER_OUTPUTS)
+
+file(MAKE_DIRECTORY "${CAS_SHADER_OUTPUT_DIR}")
 
 foreach(SHADER_FILE IN LISTS CAS_SHADER_FILES)
     get_filename_component(SHADER_NAME "${SHADER_FILE}" NAME)
 
     set(SHADER_OUTPUT
-        "${CMAKE_CURRENT_BINARY_DIR}/shader_resources/${SHADER_NAME}"
+        "${CAS_SHADER_OUTPUT_DIR}/${SHADER_NAME}"
     )
 
     add_custom_command(
         OUTPUT "${SHADER_OUTPUT}"
-        COMMAND ${CMAKE_COMMAND} -E make_directory
-            "${CMAKE_CURRENT_BINARY_DIR}/shader_resources"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${SHADER_FILE}"
             "${SHADER_OUTPUT}"
@@ -301,14 +323,90 @@ add_custom_target(CASShaders ALL
     DEPENDS ${CAS_SHADER_OUTPUTS}
 )
 
+add_dependencies(CAS CASShaders)
+
+# ------------------------------------------------------------
+# Application icon
+# ------------------------------------------------------------
+
+set(CAS_ICON_SOURCE
+    "${CMAKE_SOURCE_DIR}/resources/icons/icon.bmp"
+)
+
+set(CAS_RUNTIME_RESOURCE_DIR
+    "$<TARGET_FILE_DIR:CAS>/resources/icons"
+)
+
 add_custom_command(TARGET CAS POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E make_directory
-        "${CAS_SHADER_OUTPUT_DIR}"
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_CURRENT_BINARY_DIR}/shader_resources"
-        "${CAS_SHADER_OUTPUT_DIR}"
-    COMMENT "Copying GPU shaders to the output directory"
+        "${CAS_RUNTIME_RESOURCE_DIR}"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CAS_ICON_SOURCE}"
+        "${CAS_RUNTIME_RESOURCE_DIR}/icon.bmp"
+    COMMENT "Copying application icon"
     VERBATIM
 )
 
-add_dependencies(CAS CASShaders)
+# ------------------------------------------------------------
+# Runtime shader directory
+# ------------------------------------------------------------
+
+add_custom_command(TARGET CAS POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+        "$<TARGET_FILE_DIR:CAS>/resources/shaders"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CAS_SHADER_OUTPUT_DIR}"
+        "$<TARGET_FILE_DIR:CAS>/resources/shaders"
+    COMMENT "Copying GPU shaders"
+    VERBATIM
+)
+
+# ============================================================
+# Linux installation
+# ============================================================
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+
+    option(CAS_INSTALL_LINUX_ICON
+        "Install CAS desktop icon and application entry"
+        ON
+    )
+
+    install(TARGETS CAS
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
+
+    if(CAS_INSTALL_LINUX_ICON)
+
+        # Install scalable application icon.
+        install(FILES
+            "${CMAKE_SOURCE_DIR}/resources/icons/icon.svg"
+            DESTINATION
+                "${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps"
+            RENAME CAS.svg
+        )
+
+        # Generate desktop entry.
+        file(GENERATE
+            OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/CAS.desktop"
+            CONTENT
+"[Desktop Entry]
+Type=Application
+Name=CAS
+Comment=Cellular Automaton Simulator
+Exec=${CMAKE_INSTALL_FULL_BINDIR}/CAS
+Icon=CAS
+Terminal=false
+Categories=Education;Science;
+"
+        )
+
+        install(FILES
+            "${CMAKE_CURRENT_BINARY_DIR}/CAS.desktop"
+            DESTINATION
+                "${CMAKE_INSTALL_DATADIR}/applications"
+        )
+
+    endif()
+
+endif()

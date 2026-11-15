@@ -74,6 +74,13 @@ public:
     bool is_full_screen() const { return _is_full_screen; }
 
 private:
+    /**
+     * Changes the window icon.
+     *
+     * @throws std::runtime_error If SDL fails to change the icon.
+     */
+    void set_icon();
+
     SDL_Window* _handle{};
     bool _is_full_screen = false;
 };

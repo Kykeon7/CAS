@@ -124,7 +124,11 @@ void SDLCALL dialog_service::dialog_callback(
         return;
 
     try {
-        auto path = std::filesystem::u8path(filelist[0]);
+        auto path = std::filesystem::path(
+            std::u8string(
+                reinterpret_cast<const char8_t*>(filelist[0])
+            )
+        );
 
         if (is_save_operation(context->operation) &&
             path.extension().empty()) {

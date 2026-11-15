@@ -1,5 +1,4 @@
 #include <application/application.h>
-
 #include <exception>
 #include <stdexcept>
 

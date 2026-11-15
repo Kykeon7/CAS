@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL.h>
 
+#include <filesystem>
 #include <stdexcept>
 #include <string>
 
@@ -22,6 +23,8 @@ window::window(std::string_view title) {
 
     if (!_handle)
         throw std::runtime_error(SDL_GetError());
+
+    set_icon();
 }
 
 window::window(
@@ -41,6 +44,8 @@ window::window(
 
     if (!_handle)
         throw std::runtime_error(SDL_GetError());
+
+    set_icon();
 }
 
 window::~window() {
@@ -60,6 +65,24 @@ void window::set_full_screen(bool enabled) {
         throw std::runtime_error(SDL_GetError());
 
     _is_full_screen = enabled;
+}
+
+void window::set_icon() {
+    const std::filesystem::path icon_path =
+        std::filesystem::path(SDL_GetBasePath()) /
+        "resources" / "icons" / "icon.bmp";
+
+    SDL_Surface* icon = SDL_LoadBMP(icon_path.string().c_str());
+
+    if (!icon)
+        throw std::runtime_error(SDL_GetError());
+
+    const bool success = SDL_SetWindowIcon(_handle, icon);
+
+    SDL_DestroySurface(icon);
+
+    if (!success)
+        throw std::runtime_error(SDL_GetError());
 }
 
 }

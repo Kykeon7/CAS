@@ -18,8 +18,8 @@ class viewport_view;
 /**
  * @brief Displays and manages the application settings window.
  *
- * Maintains temporary drafts for settings that require explicit
- * confirmation before being applied.
+ * Maintains a temporary copy of application settings. Changes are applied
+ * globally only after explicit confirmation.
  */
 class settings_window {
 public:
@@ -51,7 +51,7 @@ public:
     void set_viewport_view(viewport_view& view) noexcept;
 
     /**
-     * @brief Updates the default save directory.
+     * @brief Updates the default save directory in the settings draft.
      *
      * @param path New default save directory.
      */
@@ -81,7 +81,16 @@ public:
     void render();
 
 private:
-    void request_backend_change(rendering::backend backend);
+    bool has_pending_changes() const;
+    bool validate_draft() const;
+
+    void reset_draft();
+    void apply_draft();
+
+    void request_close();
+    void request_apply();
+
+    void render_actions();
 
     void render_general();
     void render_simulation();
@@ -99,23 +108,29 @@ private:
         int count
     );
 
-    void apply_randomization();
-
     void default_interface_draft();
     void reset_interface_draft();
-    void apply_interface_draft();
 
     void render_appearance_preview();
 
 private:
     settings& _settings;
+    settings _draft;
+
     notifications& _notifications;
+    files::dialog_service& _dialog_service;
+
     rendering::backend _active_backend = rendering::backend::gpu;
     bool _gpu_fallback = false;
+
     std::optional<std::reference_wrapper<viewport_view>> _view;
+    bool _toroidal_boundary_draft = false;
 
     bool _is_open = false;
     bool _select_requested_tab = false;
+    bool _close_confirmation_pending = false;
+    bool _apply_confirmation_pending = false;
+
     settings_tab _active_tab = settings_tab::general;
 
     std::array<char, 256> _workspace_filename_buffer{};
@@ -126,10 +141,6 @@ private:
     std::uint32_t _random_seed_draft = 5489;
 
     bool _randomization_invalid = false;
-
-    interface_settings _interface_draft;
-
-    files::dialog_service& _dialog_service;
 };
 
 } // namespace cas::gui

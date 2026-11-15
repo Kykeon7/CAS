@@ -1,7 +1,5 @@
 #include <application/application.h>
 
-#include <SDL3/SDL.h>
-
 #include <exception>
 #include <memory>
 #include <stdexcept>
@@ -29,6 +27,7 @@
 #include <gui/panels/viewport.h>
 #include <gui/viewport_view.h>
 #include <inputs/input.h>
+#include <platform/application_directory.h>
 #include <platform/gpu_renderer.h>
 #include <rendering/automaton/gpu_renderer.h>
 #include <rendering/automaton/hex_renderer.h>
@@ -37,23 +36,6 @@
 #include <system/profiler.h>
 #include <system/time.h>
 #include <viewports/camera.h>
-
-namespace {
-
-std::filesystem::path get_application_directory() {
-    const char* base_path = SDL_GetBasePath();
-
-    if (base_path == nullptr) {
-        throw std::runtime_error(
-            "Failed to retrieve application directory: "
-            + std::string(SDL_GetError())
-        );
-    }
-
-    return std::filesystem::path(base_path);
-}
-
-} // namespace
 
 namespace cas {
 
@@ -73,7 +55,6 @@ application::application()
           _file_dialog_service
       ),
       _main_menu(_file_dialog_service, _panels, _settings)
-      
 {
     auto& logger = system::logger::instance();
 
@@ -81,105 +62,12 @@ application::application()
 
     system::print_system_info();
 
-    // Resolve portable application directories.
-    const auto application_directory =
-        get_application_directory();
-
-    const auto config_directory =
-        application_directory / "config";
-
-    std::filesystem::create_directories(config_directory);
-
-    _config_path = config_directory / "config.json";
-    _imgui_ini_path = config_directory / "imgui.ini";
-
-    // Load global application settings.
-    if (std::filesystem::exists(_config_path)) {
-        try {
-            _settings =
-                files::serialization::load_application_settings_file(
-                    _config_path
-                );
-
-            logger.info(
-                "Persistence",
-                "Application settings loaded."
-            );
-        } catch (const std::exception& exception) {
-            logger.error(
-                "Persistence",
-                "Failed to load application settings: "
-                + std::string(exception.what())
-            );
-
-            _settings = {};
-        }
-    }
+    load_settings();
 
     // Apply the backend preference loaded from the settings file.
     _rendering_context.set_backend(_settings.rendering.backend);
 
-    // Configure the default workspace directory.
-    if (_settings.default_save_directory.empty()) {
-        _settings.default_save_directory =
-            application_directory / "workspaces";
-    }
-
-    std::filesystem::create_directories(
-        _settings.default_save_directory
-    );
-
-    // Schedule initial workspace loading.
-    if (_settings.load_workspace_on_startup
-        && !_settings.last_workspace_path.empty()
-        && std::filesystem::exists(
-            _settings.last_workspace_path
-        )) {
-
-        _workspace.set_location(_settings.last_workspace_path);
-
-        _workspace_loading = true;
-        _initial_workspace_load_pending = true;
-
-        logger.info(
-            "Persistence",
-            "Workspace loading scheduled: "
-            + _workspace.path().string()
-        );
-    }
-    else {
-        logger.info(
-            "Persistence",
-            "Starting with a default workspace."
-        );
-
-        _workspace.clear_location();
-
-        const auto default_workspace_path =
-            _settings.default_save_directory
-            / _settings.workspace_filename;
-
-        // Associate the new workspace only if its destination
-        // does not already contain another workspace.
-        if (!std::filesystem::exists(default_workspace_path)) {
-            _workspace.set_location(default_workspace_path);
-
-            _settings.last_workspace_path = _workspace.path();
-
-            logger.info(
-                "Persistence",
-                "Default workspace location assigned: "
-                + _workspace.path().string()
-            );
-        }
-        else {
-            logger.warn(
-                "Persistence",
-                "Default workspace already exists. "
-                "Save As is required to avoid overwriting it."
-            );
-        }
-    }
+    load_workspace();
 
     update_window_title();
 
@@ -201,6 +89,7 @@ application::application()
     );
 
     auto& viewports = _workspace.viewports();
+
     viewports.set_renderer_factory(
         [this](cas::viewports::viewport& viewport) {
             return _rendering_context.create_automaton_renderer(
@@ -236,61 +125,15 @@ application::application()
 }
 
 application::~application() {
-    auto& logger = system::logger::instance();
-
     _file_operation_handler.wait_until_idle();
     _file_operation_handler.consume_results();
 
-    if (_settings.save_workspace_on_exit
-        && _workspace.has_location()) {
-        try {
-            files::serialization::save_workspace_file(
-                _workspace.path(),
-                _workspace.viewports(),
-                _workspace.ui_scale()
-            );
+    save_workspace();
 
-            _settings.last_workspace_path = _workspace.path();
-
-            logger.info(
-                "Persistence",
-                "Workspace saved on exit: "
-                + _workspace.path().string()
-            );
-        }
-        catch (const std::exception& exception) {
-            logger.error(
-                "Persistence",
-                "Failed to save workspace '"
-                + _workspace.path().string()
-                + "': "
-                + exception.what()
-            );
-        }
-    }
-
-    if (_layout) {
+    if (_layout)
         _layout->save();
-    }
 
-    try {
-        files::serialization::save_application_settings_file(
-            _config_path,
-            _settings
-        );
-
-        logger.info(
-            "Persistence",
-            "Application settings saved."
-        );
-    }
-    catch (const std::exception& exception) {
-        logger.error(
-            "Persistence",
-            "Failed to save application settings: "
-            + std::string(exception.what())
-        );
-    }
+    save_settings();
 }
 
 void application::run() {
@@ -1293,6 +1136,172 @@ void application::request_exit_confirmation() {
         },
         "Exit"
     );
+}
+
+void application::load_settings() {
+    auto& logger = system::logger::instance();
+
+    const auto application_directory =
+        platform::get_application_directory();
+
+    const auto config_directory =
+        application_directory / "config";
+
+    std::filesystem::create_directories(config_directory);
+
+    _config_path = config_directory / "config.json";
+    _imgui_ini_path = config_directory / "imgui.ini";
+
+    logger.info(
+        "Persistence",
+        "Application settings path: "
+        + _config_path.string()
+    );
+
+    if (std::filesystem::exists(_config_path)) {
+        try {
+            _settings =
+                files::serialization::load_application_settings_file(
+                    _config_path
+                );
+
+            logger.info(
+                "Persistence",
+                "Application settings loaded."
+            );
+        }
+        catch (const std::exception& exception) {
+            logger.error(
+                "Persistence",
+                "Failed to load application settings: "
+                + std::string(exception.what())
+            );
+
+            _settings = {};
+        }
+    }
+
+    // Configure the default workspace directory.
+    if (_settings.default_save_directory.empty()) {
+        _settings.default_save_directory =
+            application_directory / "workspaces";
+    }
+
+    std::filesystem::create_directories(
+        _settings.default_save_directory
+    );
+}
+
+void application::load_workspace() {
+    auto& logger = system::logger::instance();
+
+    if (_settings.load_workspace_on_startup
+        && !_settings.last_workspace_path.empty()
+        && std::filesystem::exists(
+            _settings.last_workspace_path
+        )) {
+
+        _workspace.set_location(_settings.last_workspace_path);
+
+        _workspace_loading = true;
+        _initial_workspace_load_pending = true;
+
+        logger.info(
+            "Persistence",
+            "Workspace loading scheduled: "
+            + _workspace.path().string()
+        );
+    }
+    else {
+        logger.info(
+            "Persistence",
+            "Starting with a default workspace."
+        );
+
+        _workspace.clear_location();
+
+        const auto default_workspace_path =
+            _settings.default_save_directory
+            / _settings.workspace_filename;
+
+        // Associate the new workspace only if its destination
+        // does not already contain another workspace.
+        if (!std::filesystem::exists(default_workspace_path)) {
+            _workspace.set_location(default_workspace_path);
+
+            _settings.last_workspace_path = _workspace.path();
+
+            logger.info(
+                "Persistence",
+                "Default workspace location assigned: "
+                + _workspace.path().string()
+            );
+        }
+        else {
+            logger.warn(
+                "Persistence",
+                "Default workspace already exists. "
+                "Save As is required to avoid overwriting it."
+            );
+        }
+    }
+}
+
+void application::save_workspace() {
+    auto& logger = system::logger::instance();
+
+    if (!_settings.save_workspace_on_exit
+        || !_workspace.has_location()) {
+        return;
+    }
+
+    try {
+        files::serialization::save_workspace_file(
+            _workspace.path(),
+            _workspace.viewports(),
+            _workspace.ui_scale()
+        );
+
+        _settings.last_workspace_path = _workspace.path();
+
+        logger.info(
+            "Persistence",
+            "Workspace saved on exit: "
+            + _workspace.path().string()
+        );
+    }
+    catch (const std::exception& exception) {
+        logger.error(
+            "Persistence",
+            "Failed to save workspace '"
+            + _workspace.path().string()
+            + "': "
+            + exception.what()
+        );
+    }
+}
+
+void application::save_settings() {
+    auto& logger = system::logger::instance();
+
+    try {
+        files::serialization::save_application_settings_file(
+            _config_path,
+            _settings
+        );
+
+        logger.info(
+            "Persistence",
+            "Application settings saved."
+        );
+    }
+    catch (const std::exception& exception) {
+        logger.error(
+            "Persistence",
+            "Failed to save application settings: "
+            + std::string(exception.what())
+        );
+    }
 }
 
 } // namespace cas

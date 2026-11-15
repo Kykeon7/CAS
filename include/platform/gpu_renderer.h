@@ -120,9 +120,35 @@ public:
 
 private:
     void create_pipeline();
+
     void create_pixel_pipeline();
+
     void recreate_input_texture(int width, int height);
+
     void release_resources() noexcept;
+
+    void draw_with_pipeline(
+        std::span<const std::byte> data,
+        int data_width,
+        int data_height,
+        std::span<const std::byte> uniforms,
+        graphics::color clear_color,
+        SDL_GPUGraphicsPipeline* pipeline
+    );
+
+    void upload_input_data(
+        SDL_GPUCommandBuffer* command_buffer,
+        std::span<const std::byte> data,
+        int data_width,
+        int data_height
+    );
+
+    void render_input_texture(
+        SDL_GPUCommandBuffer* command_buffer,
+        std::span<const std::byte> uniforms,
+        graphics::color clear_color,
+        SDL_GPUGraphicsPipeline* pipeline
+    );
 
     gpu_device& _device;
     gpu_frame _frame;

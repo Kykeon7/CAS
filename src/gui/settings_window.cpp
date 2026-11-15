@@ -15,7 +15,7 @@
 namespace cas::gui {
 namespace {
 
-class interface_preview_scope {
+class interface_preview_scope final {
 public:
     explicit interface_preview_scope(
         const interface_settings& settings
@@ -32,14 +32,10 @@ public:
     }
 
     interface_preview_scope(const interface_preview_scope&) = delete;
-    interface_preview_scope& operator=(
-        const interface_preview_scope&
-        ) = delete;
+    interface_preview_scope& operator=(const interface_preview_scope&) = delete;
 
     interface_preview_scope(interface_preview_scope&&) = delete;
-    interface_preview_scope& operator=(
-        interface_preview_scope&&
-        ) = delete;
+    interface_preview_scope& operator=(interface_preview_scope&&) = delete;
 
     ~interface_preview_scope() {
         ImGui::GetStyle() = _previous_style;
@@ -51,49 +47,19 @@ private:
     float _previous_font_scale;
 };
 
-} // namespace 
+} // namespace
 
 settings_window::settings_window(
     settings& settings,
     notifications& notifications,
     files::dialog_service& dialog_service
-)
-    : _settings(settings),
+) :
+    _settings(settings),
+    _draft(settings),
     _notifications(notifications),
     _dialog_service(dialog_service)
 {
-
-    const auto& filename = _settings.workspace_filename;
-
-    const auto filename_length = std::min(
-        filename.size(),
-        _workspace_filename_buffer.size() - 1
-    );
-
-    std::memcpy(
-        _workspace_filename_buffer.data(),
-        filename.data(),
-        filename_length
-    );
-
-    _workspace_filename_buffer[filename_length] = '\0';
-
-    const auto directory = _settings.default_save_directory.string();
-
-    const auto directory_length = std::min(
-        directory.size(),
-        _save_directory_buffer.size() - 1
-    );
-
-    std::memcpy(
-        _save_directory_buffer.data(),
-        directory.data(),
-        directory_length
-    );
-
-    _save_directory_buffer[directory_length] = '\0';
-
-    reset_randomization_draft();
+    reset_draft();
 }
 
 void settings_window::set_active_backend(
@@ -104,30 +70,10 @@ void settings_window::set_active_backend(
     _gpu_fallback = gpu_fallback;
 }
 
-void settings_window::request_backend_change(
-    rendering::backend backend
-) {
-    if (_settings.rendering.backend == backend)
-        return;
-
-    _notifications.confirm(
-        "Change Rendering Backend",
-        "Changing the rendering backend requires restarting CAS. "
-        "Save any unsaved work before restarting. "
-        "The selected backend will be used the next time CAS starts. "
-        "Do you want to continue?",
-        [this, backend](bool confirmed) {
-            if (confirmed)
-                _settings.rendering.backend = backend;
-        },
-        "Continue"
-    );
-}
-
 void settings_window::set_save_directory(
     std::filesystem::path path
 ) {
-    _settings.default_save_directory = path;
+    _draft.default_save_directory = path;
 
     const auto directory = path.string();
 
@@ -149,20 +95,390 @@ void settings_window::set_viewport_view(
     viewport_view& view
 ) noexcept {
     _view = std::ref(view);
+
+    const auto boundary =
+        _view->get().simulation().automaton().topology().boundary();
+
+    _toroidal_boundary_draft =
+        boundary == automata::boundary_type::toroidal;
 }
 
 void settings_window::open(settings_tab tab) {
-    if (!_is_open) {
-        if (tab == settings_tab::simulation)
-            reset_randomization_draft();
-
-        if (tab == settings_tab::appearance)
-            reset_interface_draft();
-    }
+    if (!_is_open)
+        reset_draft();
 
     _active_tab = tab;
     _is_open = true;
     _select_requested_tab = true;
+}
+
+bool settings_window::has_pending_changes() const {
+    const auto& current = _settings;
+    const auto& draft = _draft;
+
+    const bool settings_changed =
+        draft.default_save_directory != current.default_save_directory ||
+        draft.workspace_filename != current.workspace_filename ||
+        draft.last_workspace_path != current.last_workspace_path ||
+        draft.load_workspace_on_startup != current.load_workspace_on_startup ||
+        draft.save_workspace_on_exit != current.save_workspace_on_exit ||
+        draft.save_imgui_layout != current.save_imgui_layout ||
+        draft.rendering.backend != current.rendering.backend ||
+        draft.randomization.two_states != current.randomization.two_states ||
+        draft.randomization.three_states != current.randomization.three_states ||
+        draft.randomization.seed != current.randomization.seed ||
+        draft.interface.theme != current.interface.theme ||
+        draft.interface.density != current.interface.density ||
+        draft.interface.scale != current.interface.scale ||
+        draft.stats.show_performance != current.stats.show_performance ||
+        draft.stats.show_memory != current.stats.show_memory ||
+        draft.stats.show_simulation != current.stats.show_simulation ||
+        draft.stats.show_gpu != current.stats.show_gpu;
+
+    if (settings_changed)
+        return true;
+
+    if (!_view)
+        return false;
+
+    const auto current_boundary =
+        _view->get().simulation().automaton().topology().boundary();
+
+    const bool current_toroidal =
+        current_boundary == automata::boundary_type::toroidal;
+
+    return _toroidal_boundary_draft != current_toroidal;
+}
+
+bool settings_window::validate_draft() const {
+    const int two_states_total = std::accumulate(
+        _two_states_draft.begin(),
+        _two_states_draft.end(),
+        0
+    );
+
+    const int three_states_total = std::accumulate(
+        _three_states_draft.begin(),
+        _three_states_draft.end(),
+        0
+    );
+
+    if (two_states_total != 100 || three_states_total != 100)
+        return false;
+
+    const std::filesystem::path filename(_draft.workspace_filename);
+
+    if (filename.empty() ||
+        filename.filename() != filename ||
+        filename == "." ||
+        filename == "..") {
+        return false;
+    }
+
+    return true;
+}
+
+void settings_window::reset_draft() {
+    _draft = _settings;
+
+    const auto& filename = _draft.workspace_filename;
+
+    const auto filename_length = std::min(
+        filename.size(),
+        _workspace_filename_buffer.size() - 1
+    );
+
+    std::memcpy(
+        _workspace_filename_buffer.data(),
+        filename.data(),
+        filename_length
+    );
+
+    _workspace_filename_buffer[filename_length] = '\0';
+
+    const auto directory = _draft.default_save_directory.string();
+
+    const auto directory_length = std::min(
+        directory.size(),
+        _save_directory_buffer.size() - 1
+    );
+
+    std::memcpy(
+        _save_directory_buffer.data(),
+        directory.data(),
+        directory_length
+    );
+
+    _save_directory_buffer[directory_length] = '\0';
+
+    reset_randomization_draft();
+
+    if (_view) {
+        const auto boundary =
+            _view->get().simulation().automaton().topology().boundary();
+
+        _toroidal_boundary_draft =
+            boundary == automata::boundary_type::toroidal;
+    }
+
+    _randomization_invalid = false;
+}
+
+void settings_window::apply_draft() {
+    if (!validate_draft()) {
+        _randomization_invalid = true;
+
+        _notifications.warning(
+            "Settings",
+            "Some settings are invalid. Check the workspace filename "
+            "and randomization distributions."
+        );
+
+        return;
+    }
+
+    // Normalize the workspace filename before committing the draft.
+    std::filesystem::path filename(_draft.workspace_filename);
+
+    if (filename.extension().empty())
+        filename += ".json";
+
+    _draft.workspace_filename = filename.string();
+
+    _settings = _draft;
+
+    if (_view) {
+        _view->get().simulation().set_boundary(
+            _toroidal_boundary_draft
+                ? automata::boundary_type::toroidal
+                : automata::boundary_type::finite
+        );
+    }
+
+    apply_interface_style(_settings.interface);
+
+    reset_draft();
+
+    _notifications.info(
+        "Settings",
+        "Settings updated successfully."
+    );
+}
+
+void settings_window::request_apply() {
+    if (!has_pending_changes())
+        return;
+
+    if (!validate_draft()) {
+        _randomization_invalid = true;
+
+        _notifications.warning(
+            "Settings",
+            "Some settings are invalid. Check the workspace filename "
+            "and randomization distributions."
+        );
+
+        return;
+    }
+
+    if (_draft.rendering.backend == _settings.rendering.backend) {
+        apply_draft();
+        return;
+    }
+
+    if (_apply_confirmation_pending)
+        return;
+
+    _apply_confirmation_pending = true;
+
+    _notifications.confirm(
+        "Change Rendering Backend",
+        "Changing the rendering backend requires restarting CAS. "
+        "Save any unsaved work before restarting. "
+        "The selected backend will be used the next time CAS starts. "
+        "Do you want to continue?",
+        [this](bool confirmed) {
+            _apply_confirmation_pending = false;
+
+            if (confirmed)
+                apply_draft();
+        },
+        "Continue"
+    );
+}
+
+void settings_window::request_close() {
+    if (!has_pending_changes()) {
+        _is_open = false;
+        return;
+    }
+
+    if (_close_confirmation_pending)
+        return;
+
+    _close_confirmation_pending = true;
+
+    _notifications.confirm(
+        "Unsaved Settings",
+        "You have unapplied settings changes. "
+        "Do you want to discard them?",
+        [this](bool confirmed) {
+            _close_confirmation_pending = false;
+
+            if (!confirmed)
+                return;
+
+            reset_draft();
+            _is_open = false;
+        },
+        "Discard"
+    );
+}
+
+void settings_window::render_actions() {
+    ImGui::Separator();
+
+    const bool pending_changes = has_pending_changes();
+
+    if (pending_changes) {
+        ImGui::TextDisabled("You have unapplied changes.");
+    }
+    else {
+        ImGui::TextDisabled("All changes are applied.");
+    }
+
+    const float spacing = ImGui::GetStyle().ItemSpacing.x;
+    const float available_width = ImGui::GetContentRegionAvail().x;
+    const float button_width = (available_width - spacing) * 0.5f;
+
+    ImGui::BeginDisabled(!pending_changes || _apply_confirmation_pending);
+
+    if (ImGui::Button(
+        "Accept",
+        ImVec2(button_width, 0.0f)
+    )) {
+        request_apply();
+    }
+
+    ImGui::EndDisabled();
+
+    ImGui::SameLine();
+
+    ImGui::BeginDisabled(!pending_changes || _close_confirmation_pending);
+
+    if (ImGui::Button(
+        "Cancel",
+        ImVec2(button_width, 0.0f)
+    )) {
+        reset_draft();
+    }
+
+    ImGui::EndDisabled();
+}
+
+void settings_window::render() {
+    if (!_is_open)
+        return;
+
+    bool visible = _is_open;
+
+    const bool contents_visible = ImGui::Begin(
+        "Settings",
+        &visible
+    );
+
+    if (!visible)
+        request_close();
+
+    if (contents_visible) {
+        const float item_spacing = ImGui::GetStyle().ItemSpacing.y;
+
+        const float footer_height =
+            ImGui::GetTextLineHeightWithSpacing() +
+            ImGui::GetFrameHeightWithSpacing() +
+            item_spacing * 2.0f;
+
+        ImGui::BeginChild(
+            "SettingsContent",
+            ImVec2(0.0f, -footer_height),
+            false
+        );
+
+        if (ImGui::BeginTabBar("##SettingsTabs")) {
+            const auto requested_tab = _active_tab;
+            const bool select_requested_tab = _select_requested_tab;
+
+            if (ImGui::BeginTabItem(
+                "General",
+                nullptr,
+                select_requested_tab &&
+                    requested_tab == settings_tab::general
+                    ? ImGuiTabItemFlags_SetSelected
+                    : ImGuiTabItemFlags_None
+            )) {
+                if (!select_requested_tab)
+                    _active_tab = settings_tab::general;
+
+                render_general();
+                ImGui::EndTabItem();
+            }
+
+            if (ImGui::BeginTabItem(
+                "Simulation",
+                nullptr,
+                select_requested_tab &&
+                    requested_tab == settings_tab::simulation
+                    ? ImGuiTabItemFlags_SetSelected
+                    : ImGuiTabItemFlags_None
+            )) {
+                if (!select_requested_tab)
+                    _active_tab = settings_tab::simulation;
+
+                render_simulation();
+                ImGui::EndTabItem();
+            }
+
+            if (ImGui::BeginTabItem(
+                "Appearance",
+                nullptr,
+                select_requested_tab &&
+                    requested_tab == settings_tab::appearance
+                    ? ImGuiTabItemFlags_SetSelected
+                    : ImGuiTabItemFlags_None
+            )) {
+                if (!select_requested_tab)
+                    _active_tab = settings_tab::appearance;
+
+                render_appearance();
+                ImGui::EndTabItem();
+            }
+
+            if (ImGui::BeginTabItem(
+                "View",
+                nullptr,
+                select_requested_tab &&
+                    requested_tab == settings_tab::view
+                    ? ImGuiTabItemFlags_SetSelected
+                    : ImGuiTabItemFlags_None
+            )) {
+                if (!select_requested_tab)
+                    _active_tab = settings_tab::view;
+
+                render_view();
+                ImGui::EndTabItem();
+            }
+
+            ImGui::EndTabBar();
+        }
+
+        ImGui::EndChild();
+
+        _select_requested_tab = false;
+
+        render_actions();
+    }
+
+    ImGui::End();
 }
 
 void settings_window::default_randomization_draft() {
@@ -174,7 +490,7 @@ void settings_window::default_randomization_draft() {
 }
 
 void settings_window::reset_randomization_draft() {
-    const auto& randomization = _settings.randomization;
+    const auto& randomization = _draft.randomization;
 
     for (std::size_t i = 0; i < _two_states_draft.size(); ++i) {
         _two_states_draft[i] =
@@ -186,7 +502,7 @@ void settings_window::reset_randomization_draft() {
             static_cast<int>(randomization.three_states[i]);
     }
 
-    _random_seed_draft = _settings.randomization.seed;
+    _random_seed_draft = randomization.seed;
 
     _randomization_invalid = false;
 }
@@ -241,59 +557,11 @@ int settings_window::render_randomization_distribution(
         ImGui::PopID();
     }
 
-    ImGui::Text(
-        "Total: %d%%",
-        total
-    );
+    ImGui::Text("Total: %d%%", total);
 
     ImGui::PopID();
 
     return total;
-}
-
-void settings_window::apply_randomization() {
-    const int two_states_total = std::accumulate(
-        _two_states_draft.begin(),
-        _two_states_draft.end(),
-        0
-    );
-
-    const int three_states_total = std::accumulate(
-        _three_states_draft.begin(),
-        _three_states_draft.end(),
-        0
-    );
-
-    if (two_states_total != 100 || three_states_total != 100) {
-        _randomization_invalid = true;
-
-        _notifications.warning(
-            "Simulation Settings",
-            "Randomization distributions must sum to 100%."
-        );
-
-        return;
-    }
-
-    _settings.randomization.two_states = {
-        static_cast<std::uint32_t>(_two_states_draft[0]),
-        static_cast<std::uint32_t>(_two_states_draft[1])
-    };
-
-    _settings.randomization.three_states = {
-        static_cast<std::uint32_t>(_three_states_draft[0]),
-        static_cast<std::uint32_t>(_three_states_draft[1]),
-        static_cast<std::uint32_t>(_three_states_draft[2])
-    };
-
-    _settings.randomization.seed = _random_seed_draft;
-
-    _randomization_invalid = false;
-
-    _notifications.info(
-        "Simulation Settings",
-        "Randomization settings updated successfully."
-    );
 }
 
 void settings_window::render_randomization() {
@@ -355,16 +623,7 @@ void settings_window::render_randomization() {
 
     const float spacing = ImGui::GetStyle().ItemSpacing.x;
     const float available_width = ImGui::GetContentRegionAvail().x;
-    const float button_width = (available_width - spacing * 2.0f) / 3.0f;
-
-    if (ImGui::Button(
-        "Accept",
-        ImVec2(button_width, 0.0f)
-    )) {
-        apply_randomization();
-    }
-
-    ImGui::SameLine();
+    const float button_width = (available_width - spacing) * 0.5f;
 
     if (ImGui::Button(
         "Reset",
@@ -381,96 +640,29 @@ void settings_window::render_randomization() {
     )) {
         default_randomization_draft();
     }
+
+    // Keep the settings draft synchronized with the editable controls.
+    _draft.randomization.two_states = {
+        static_cast<std::uint32_t>(_two_states_draft[0]),
+        static_cast<std::uint32_t>(_two_states_draft[1])
+    };
+
+    _draft.randomization.three_states = {
+        static_cast<std::uint32_t>(_three_states_draft[0]),
+        static_cast<std::uint32_t>(_three_states_draft[1]),
+        static_cast<std::uint32_t>(_three_states_draft[2])
+    };
+
+    _draft.randomization.seed = _random_seed_draft;
 }
 
 void settings_window::default_interface_draft() {
-    _interface_draft = interface_settings{};
+    _draft.interface = interface_settings{};
 }
 
 void settings_window::reset_interface_draft() {
-    _interface_draft = _settings.interface;
+    _draft.interface = _settings.interface;
 }
-
-void settings_window::apply_interface_draft() {
-    _settings.interface = _interface_draft;
-
-    apply_interface_style(_settings.interface);
-
-    _notifications.info(
-        "Appearance Settings",
-        "Interface settings updated successfully."
-    );
-}
-
-void settings_window::render() {
-    if (!_is_open)
-        return;
-
-    if (!ImGui::Begin("Settings", &_is_open)) {
-        ImGui::End();
-        return;
-    }
-
-    if (ImGui::BeginTabBar("##SettingsTabs")) {
-        const auto requested_tab = _active_tab;
-        const bool select_requested_tab = _select_requested_tab;
-
-        if (ImGui::BeginTabItem(
-            "General", nullptr,
-            select_requested_tab && requested_tab == settings_tab::general
-            ? ImGuiTabItemFlags_SetSelected
-            : ImGuiTabItemFlags_None)) {
-            if (!select_requested_tab)
-                _active_tab = settings_tab::general;
-
-            render_general();
-            ImGui::EndTabItem();
-        }
-
-        if (ImGui::BeginTabItem(
-            "Simulation", nullptr,
-            select_requested_tab && requested_tab == settings_tab::simulation
-            ? ImGuiTabItemFlags_SetSelected
-            : ImGuiTabItemFlags_None)) {
-            if (!select_requested_tab)
-                _active_tab = settings_tab::simulation;
-
-            render_simulation();
-            ImGui::EndTabItem();
-        }
-
-        if (ImGui::BeginTabItem(
-            "Appearance", nullptr,
-            select_requested_tab && requested_tab == settings_tab::appearance
-            ? ImGuiTabItemFlags_SetSelected
-            : ImGuiTabItemFlags_None)) {
-            if (!select_requested_tab)
-                _active_tab = settings_tab::appearance;
-
-            render_appearance();
-            ImGui::EndTabItem();
-        }
-
-        if (ImGui::BeginTabItem(
-            "View", nullptr,
-            select_requested_tab && requested_tab == settings_tab::view
-            ? ImGuiTabItemFlags_SetSelected
-            : ImGuiTabItemFlags_None)) {
-            if (!select_requested_tab)
-                _active_tab = settings_tab::view;
-
-            render_view();
-            ImGui::EndTabItem();
-        }
-
-        ImGui::EndTabBar();
-        _select_requested_tab = false;
-    }
-
-    ImGui::End();
-}
-
-
 
 void settings_window::render_general() {
     // Workspace
@@ -482,55 +674,11 @@ void settings_window::render_general() {
         _workspace_filename_buffer.size()
     );
 
+    _draft.workspace_filename = _workspace_filename_buffer.data();
+
     ImGui::TextDisabled(
         "Used as the default filename when saving a workspace."
     );
-
-    if (ImGui::IsItemDeactivatedAfterEdit()) {
-        std::filesystem::path filename(
-            _workspace_filename_buffer.data()
-        );
-
-        if (!filename.empty() &&
-            filename.filename() == filename &&
-            filename != "." &&
-            filename != "..") {
-
-            if (filename.extension().empty())
-                filename += ".json";
-
-            _settings.workspace_filename = filename.string();
-
-            const auto normalized = _settings.workspace_filename;
-            const auto length = std::min(
-                normalized.size(),
-                _workspace_filename_buffer.size() - 1
-            );
-
-            std::memcpy(
-                _workspace_filename_buffer.data(),
-                normalized.data(),
-                length
-            );
-
-            _workspace_filename_buffer[length] = '\0';
-        }
-        else {
-            const auto& previous = _settings.workspace_filename;
-            const auto length = std::min(
-                previous.size(),
-                _workspace_filename_buffer.size() - 1
-            );
-
-            std::memcpy(
-                _workspace_filename_buffer.data(),
-                previous.data(),
-                length
-            );
-
-            _workspace_filename_buffer[length] = '\0';
-        }
-    }
 
     ImGui::Spacing();
 
@@ -551,9 +699,6 @@ void settings_window::render_general() {
         _save_directory_buffer.size()
     );
 
-    const bool directory_edited =
-        ImGui::IsItemDeactivatedAfterEdit();
-
     ImGui::SameLine();
 
     if (ImGui::Button(
@@ -565,10 +710,8 @@ void settings_window::render_general() {
         );
     }
 
-    if (directory_edited) {
-        _settings.default_save_directory =
-            _save_directory_buffer.data();
-    }
+    _draft.default_save_directory =
+        _save_directory_buffer.data();
 
     ImGui::TextDisabled(
         "Suggested directory when saving a new workspace."
@@ -581,7 +724,7 @@ void settings_window::render_general() {
 
     ImGui::Checkbox(
         "Load last workspace on startup",
-        &_settings.load_workspace_on_startup
+        &_draft.load_workspace_on_startup
     );
 
     ImGui::TextDisabled(
@@ -594,34 +737,34 @@ void settings_window::render_general() {
     ImGui::Text("Rendering");
 
     const char* selected_backend =
-        _settings.rendering.backend == rendering::backend::gpu
-        ? "GPU"
-        : "CPU";
+        _draft.rendering.backend == rendering::backend::gpu
+            ? "GPU"
+            : "CPU";
 
     if (ImGui::BeginCombo("Rendering backend", selected_backend)) {
         const bool cpu_selected =
-            _settings.rendering.backend == rendering::backend::cpu;
+            _draft.rendering.backend == rendering::backend::cpu;
 
         if (ImGui::Selectable("CPU", cpu_selected))
-            request_backend_change(rendering::backend::cpu);
+            _draft.rendering.backend = rendering::backend::cpu;
 
         const bool gpu_selected =
-            _settings.rendering.backend == rendering::backend::gpu;
+            _draft.rendering.backend == rendering::backend::gpu;
 
         if (ImGui::Selectable("GPU", gpu_selected))
-            request_backend_change(rendering::backend::gpu);
+            _draft.rendering.backend = rendering::backend::gpu;
 
         ImGui::EndCombo();
     }
 
-    if (_settings.rendering.backend != _active_backend) {
+    if (_draft.rendering.backend != _active_backend) {
         ImGui::TextDisabled(
             "Restart CAS to apply the rendering backend change."
         );
     }
 
-    if (_gpu_fallback
-        && _settings.rendering.backend == rendering::backend::gpu) {
+    if (_gpu_fallback &&
+        _draft.rendering.backend == rendering::backend::gpu) {
         ImGui::TextWrapped(
             "GPU initialization failed. CAS is using the CPU backend "
             "for this session and will try GPU again on the next launch."
@@ -635,7 +778,7 @@ void settings_window::render_general() {
 
     ImGui::Checkbox(
         "Save workspace on exit",
-        &_settings.save_workspace_on_exit
+        &_draft.save_workspace_on_exit
     );
 
     ImGui::TextDisabled(
@@ -644,7 +787,7 @@ void settings_window::render_general() {
 
     ImGui::Checkbox(
         "Save interface layout",
-        &_settings.save_imgui_layout
+        &_draft.save_imgui_layout
     );
 
     ImGui::TextDisabled(
@@ -663,25 +806,16 @@ void settings_window::render_simulation() {
         return;
     }
 
-    const automata::boundary_type boundary =
-        _view->get().simulation().automaton().topology().boundary();
+    const bool finite = !_toroidal_boundary_draft;
+    const bool toroidal = _toroidal_boundary_draft;
 
-    bool finite = boundary == automata::boundary_type::finite;
-    bool toroidal = boundary == automata::boundary_type::toroidal;
-
-    if (ImGui::RadioButton("Finite", finite)) {
-        _view->get().simulation().set_boundary(
-            automata::boundary_type::finite
-        );
-    }
+    if (ImGui::RadioButton("Finite", finite))
+        _toroidal_boundary_draft = false;
 
     ImGui::SameLine();
 
-    if (ImGui::RadioButton("Toroidal", toroidal)) {
-        _view->get().simulation().set_boundary(
-            automata::boundary_type::toroidal
-        );
-    }
+    if (ImGui::RadioButton("Toroidal", toroidal))
+        _toroidal_boundary_draft = true;
 }
 
 void settings_window::render_appearance_preview() {
@@ -690,7 +824,7 @@ void settings_window::render_appearance_preview() {
         "A preview of the CAS interface using the selected style."
     );
 
-    interface_preview_scope preview_scope(_interface_draft);
+    interface_preview_scope preview_scope(_draft.interface);
 
     const float preview_height = 300.0f;
 
@@ -736,21 +870,14 @@ void settings_window::render_appearance_preview() {
 
     ImGui::BeginDisabled();
 
-    if (ImGui::Button("Start", ImVec2(-1.0f, 0.0f)))
-    {
-    }
-
-    if (ImGui::Button("Step", ImVec2(-1.0f, 0.0f)))
-    {
-    }
-
-    if (ImGui::Button("Randomize", ImVec2(-1.0f, 0.0f)))
-    {
-    }
+    ImGui::Button("Start", ImVec2(-1.0f, 0.0f));
+    ImGui::Button("Step", ImVec2(-1.0f, 0.0f));
+    ImGui::Button("Randomize", ImVec2(-1.0f, 0.0f));
 
     ImGui::Spacing();
 
     float speed = 30.0f;
+
     ImGui::Text("Simulation Speed");
     ImGui::SliderFloat(
         "##PreviewSpeed",
@@ -784,7 +911,8 @@ void settings_window::render_appearance_preview() {
 
             constexpr int rows = 6;
             constexpr int columns = 8;
-            const float radius = 9.0f * _interface_draft.scale;
+
+            const float radius = 9.0f * _draft.interface.scale;
 
             const float hex_width = radius * 2.0f;
             const float hex_height = std::sqrt(3.0f) * radius;
@@ -800,8 +928,8 @@ void settings_window::render_appearance_preview() {
             for (int r = 0; r < rows; ++r) {
                 for (int q = 0; q < columns; ++q) {
                     const float x =
-                        origin_x + q * spacing_x
-                        + (r % 2) * spacing_x * 0.5f;
+                        origin_x + q * spacing_x +
+                        (r % 2) * spacing_x * 0.5f;
 
                     const float y = origin_y + r * spacing_y;
 
@@ -859,6 +987,7 @@ void settings_window::render_appearance_preview() {
     ImGui::BeginDisabled();
 
     float cell_size = 12.0f;
+
     ImGui::SliderFloat(
         "Cell Size",
         &cell_size,
@@ -869,7 +998,6 @@ void settings_window::render_appearance_preview() {
     ImGui::EndDisabled();
 
     ImGui::EndChild();
-
     ImGui::EndChild();
 }
 
@@ -898,7 +1026,7 @@ void settings_window::render_appearance() {
         "Spacious"
     };
 
-    int theme = static_cast<int>(_interface_draft.theme);
+    int theme = static_cast<int>(_draft.interface.theme);
 
     if (ImGui::Combo(
         "Theme",
@@ -906,10 +1034,10 @@ void settings_window::render_appearance() {
         themes,
         IM_ARRAYSIZE(themes)
     )) {
-        _interface_draft.theme = static_cast<ui_theme>(theme);
+        _draft.interface.theme = static_cast<ui_theme>(theme);
     }
 
-    int density = static_cast<int>(_interface_draft.density);
+    int density = static_cast<int>(_draft.interface.density);
 
     if (ImGui::Combo(
         "UI Density",
@@ -917,11 +1045,11 @@ void settings_window::render_appearance() {
         densities,
         IM_ARRAYSIZE(densities)
     )) {
-        _interface_draft.density =
+        _draft.interface.density =
             static_cast<ui_density>(density);
     }
 
-    float scale_percent = _interface_draft.scale * 100.0f;
+    float scale_percent = _draft.interface.scale * 100.0f;
 
     ImGui::SetNextItemWidth(180.0f);
 
@@ -933,7 +1061,7 @@ void settings_window::render_appearance() {
         "%.0f%%",
         ImGuiSliderFlags_AlwaysClamp
     )) {
-        _interface_draft.scale = scale_percent / 100.0f;
+        _draft.interface.scale = scale_percent / 100.0f;
     }
 
     ImGui::Spacing();
@@ -941,16 +1069,7 @@ void settings_window::render_appearance() {
 
     const float spacing = ImGui::GetStyle().ItemSpacing.x;
     const float available_width = ImGui::GetContentRegionAvail().x;
-    const float button_width = (available_width - spacing * 2.0f) / 3.0f;
-
-    if (ImGui::Button(
-        "Accept",
-        ImVec2(button_width, 0.0f)
-    )) {
-        apply_interface_draft();
-    }
-
-    ImGui::SameLine();
+    const float button_width = (available_width - spacing) * 0.5f;
 
     if (ImGui::Button(
         "Reset",
@@ -975,29 +1094,30 @@ void settings_window::render_appearance() {
 
     ImGui::EndChild();
 }
+
 void settings_window::render_view() {
     ImGui::Text("Stats Panel");
     ImGui::Separator();
 
     ImGui::Checkbox(
         "Performance",
-        &_settings.stats.show_performance
+        &_draft.stats.show_performance
     );
 
     ImGui::Checkbox(
         "Memory",
-        &_settings.stats.show_memory
+        &_draft.stats.show_memory
     );
 
     ImGui::Checkbox(
         "Simulation",
-        &_settings.stats.show_simulation
+        &_draft.stats.show_simulation
     );
 
     ImGui::Checkbox(
         "GPU",
-        &_settings.stats.show_gpu
+        &_draft.stats.show_gpu
     );
 }
 
-} // namespace cas
+} // namespace cas::gui

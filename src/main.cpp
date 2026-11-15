@@ -11,7 +11,7 @@ int main(int argc, char* argv[]) {
 
     auto& logger = cas::system::logger::instance();
 
-    constexpr bool console_output = false;
+    constexpr bool console_output = true;
 
     try {
         if (!cas::system::set_console_enabled(console_output))

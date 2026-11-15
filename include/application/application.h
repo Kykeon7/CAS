@@ -208,6 +208,42 @@ private:
      */
     void request_exit_confirmation();
 
+    /**
+     * @brief Loads application settings from the configuration file.
+     *
+     * Initializes the configuration directory and file paths, then loads
+     * the persisted settings. Restores default values if loading fails,
+     * initializes the default workspace directory when necessary, and
+     * ensures that the directory exists.
+     */
+    void load_settings();
+
+    /**
+     * @brief Configures the workspace to use at application startup.
+     *
+     * Schedules loading of the last used workspace when startup loading
+     * is enabled and the file exists. Otherwise, configures a default
+     * workspace location when no workspace file already exists.
+     */
+    void load_workspace();
+
+    /**
+     * @brief Saves the current workspace when configured to do so.
+     *
+     * Persists the workspace viewports and UI scale to its current
+     * location, updates the last used workspace path, and logs
+     * any errors encountered during serialization.
+     */
+    void save_workspace();
+
+    /**
+     * @brief Saves the current application settings.
+     *
+     * Serializes the application settings to the configuration file
+     * and logs any errors encountered during serialization.
+     */
+    void save_settings();
+
 private:
     settings _settings;
 

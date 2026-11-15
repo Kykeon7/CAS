@@ -113,34 +113,28 @@ gpu_renderer::gpu_renderer(gpu_device& device)
     }
 }
 
-gpu_renderer::~gpu_renderer()
-{
+gpu_renderer::~gpu_renderer() {
     _frame.cancel_frame();
     release_resources();
 }
 
-void gpu_renderer::begin_frame()
-{
+void gpu_renderer::begin_frame() {
     _frame.begin_frame();
 }
 
-SDL_GPURenderPass* gpu_renderer::begin_render_pass(SDL_FColor clear_color)
-{
+SDL_GPURenderPass* gpu_renderer::begin_render_pass(SDL_FColor clear_color) {
     return _frame.begin_render_pass(clear_color);
 }
 
-void gpu_renderer::end_frame()
-{
+void gpu_renderer::end_frame() {
     _frame.end_frame();
 }
 
-void gpu_renderer::cancel_frame() noexcept
-{
+void gpu_renderer::cancel_frame() noexcept {
     _frame.cancel_frame();
 }
 
-void gpu_renderer::release_resources() noexcept
-{
+void gpu_renderer::release_resources() noexcept {
     SDL_GPUDevice* device = _device.native();
 
     if (_transfer_buffer) {
@@ -402,104 +396,14 @@ void gpu_renderer::draw(
     std::span<const std::byte> uniforms,
     graphics::color clear_color)
 {
-    SDL_GPUCommandBuffer* command_buffer = _frame.command_buffer();
-    if (command_buffer == nullptr) {
-        throw std::invalid_argument("No hay un frame GPU activo.");
-    }
-    if (_viewport_width <= 0 || _viewport_height <= 0 || !_output_texture.native()) {
-        return;
-    }
-    if (data_width <= 0 || data_height <= 0) {
-        throw std::invalid_argument("Las dimensiones de los datos deben ser positivas.");
-    }
-
-    if (static_cast<std::size_t>(data_width) >
-        std::numeric_limits<Uint32>::max() /
-        static_cast<std::size_t>(data_height)) {
-        throw std::length_error(
-            "Los datos de entrada exceden el tamaño máximo del buffer GPU."
-        );
-    }
-
-    const std::size_t expected_size =
-        static_cast<std::size_t>(data_width) *
-        static_cast<std::size_t>(data_height);
-
-    if (data.size() != expected_size) {
-        throw std::invalid_argument("El tamaño de los datos no coincide con sus dimensiones.");
-    }
-    if (uniforms.empty() ||
-        uniforms.size() > std::numeric_limits<Uint32>::max()) {
-        throw std::invalid_argument(
-            "El tamaño del bloque de uniforms no es válido."
-        );
-    }
-
-    recreate_input_texture(data_width, data_height);
-
-    void* mapped = SDL_MapGPUTransferBuffer(_device.native(), _transfer_buffer, true);
-    if (!mapped) {
-        throw std::runtime_error(
-            std::string("No se pudo mapear el buffer de transferencia: ") + SDL_GetError());
-    }
-    std::memcpy(mapped, data.data(), data.size());
-    SDL_UnmapGPUTransferBuffer(_device.native(), _transfer_buffer);
-
-    SDL_GPUTextureTransferInfo source{};
-    source.transfer_buffer = _transfer_buffer;
-    source.offset = 0;
-
-    SDL_GPUTextureRegion destination_region{};
-    destination_region.texture = _input_texture;
-    destination_region.mip_level = 0;
-    destination_region.layer = 0;
-    destination_region.x = destination_region.y = destination_region.z = 0;
-    destination_region.w = static_cast<Uint32>(data_width);
-    destination_region.h = static_cast<Uint32>(data_height);
-    destination_region.d = 1;
-
-    SDL_GPUCopyPass* copy_pass = SDL_BeginGPUCopyPass(command_buffer);
-    if (!copy_pass) {
-        throw std::runtime_error(
-            std::string("No se pudo iniciar el copy pass: ") + SDL_GetError());
-    }
-    SDL_UploadToGPUTexture(copy_pass, &source, &destination_region, true);
-    SDL_EndGPUCopyPass(copy_pass);
-
-    SDL_GPUColorTargetInfo target{};
-    target.texture = _output_texture.native();
-    target.mip_level = 0;
-    target.layer_or_depth_plane = 0;
-    target.clear_color = { clear_color.r, clear_color.g, clear_color.b, clear_color.a };
-    target.load_op = SDL_GPU_LOADOP_CLEAR;
-    target.store_op = SDL_GPU_STOREOP_STORE;
-
-    SDL_GPURenderPass* render_pass = SDL_BeginGPURenderPass(
-        command_buffer, &target, 1, nullptr);
-    if (!render_pass) {
-        throw std::runtime_error(
-            std::string("No se pudo iniciar el render pass: ") + SDL_GetError());
-    }
-
-    SDL_BindGPUGraphicsPipeline(render_pass, _pipeline);
-    const SDL_GPUViewport viewport{
-        0.0f, 0.0f, static_cast<float>(_viewport_width),
-        static_cast<float>(_viewport_height), 0.0f, 1.0f
-    };
-    SDL_SetGPUViewport(render_pass, &viewport);
-
-    SDL_GPUTextureSamplerBinding binding{};
-    binding.texture = _input_texture;
-    binding.sampler = _sampler;
-    SDL_BindGPUFragmentSamplers(render_pass, 0, &binding, 1);
-    SDL_PushGPUFragmentUniformData(
-        command_buffer,
-        0,
-        uniforms.data(),
-        static_cast<Uint32>(uniforms.size())
+    draw_with_pipeline(
+        data,
+        data_width,
+        data_height,
+        uniforms,
+        clear_color,
+        _pipeline
     );
-    SDL_DrawGPUPrimitives(render_pass, 3, 1, 0, 0);
-    SDL_EndGPURenderPass(render_pass);
 }
 
 void gpu_renderer::draw_pixels(
@@ -509,21 +413,43 @@ void gpu_renderer::draw_pixels(
     std::span<const std::byte> uniforms,
     graphics::color clear_color)
 {
+    draw_with_pipeline(
+        data,
+        data_width,
+        data_height,
+        uniforms,
+        clear_color,
+        _pixel_pipeline
+    );
+}
+
+void gpu_renderer::draw_with_pipeline(
+    std::span<const std::byte> data,
+    int data_width,
+    int data_height,
+    std::span<const std::byte> uniforms,
+    graphics::color clear_color,
+    SDL_GPUGraphicsPipeline* pipeline)
+{
     SDL_GPUCommandBuffer* command_buffer = _frame.command_buffer();
 
     if (command_buffer == nullptr) {
         throw std::invalid_argument("No hay un frame GPU activo.");
     }
-    if (!_pixel_pipeline) {
-        throw std::runtime_error("_pixel_pipeline es nulo.");
+
+    if (!pipeline) {
+        throw std::runtime_error("El pipeline GPU es nulo.");
     }
+
     if (_viewport_width <= 0 || _viewport_height <= 0 ||
         !_output_texture.native()) {
         return;
     }
+
     if (data_width <= 0 || data_height <= 0) {
         throw std::invalid_argument(
-            "Las dimensiones de los datos deben ser positivas.");
+            "Las dimensiones de los datos deben ser positivas."
+        );
     }
 
     if (static_cast<std::size_t>(data_width) >
@@ -540,8 +466,10 @@ void gpu_renderer::draw_pixels(
 
     if (data.size() != expected_size) {
         throw std::invalid_argument(
-            "El tamaño de los datos no coincide con sus dimensiones.");
+            "El tamaño de los datos no coincide con sus dimensiones."
+        );
     }
+
     if (uniforms.empty() ||
         uniforms.size() > std::numeric_limits<Uint32>::max()) {
         throw std::invalid_argument(
@@ -551,17 +479,46 @@ void gpu_renderer::draw_pixels(
 
     recreate_input_texture(data_width, data_height);
 
+    upload_input_data(
+        command_buffer,
+        data,
+        data_width,
+        data_height
+    );
+
+    render_input_texture(
+        command_buffer,
+        uniforms,
+        clear_color,
+        pipeline
+    );
+}
+
+void gpu_renderer::upload_input_data(
+    SDL_GPUCommandBuffer* command_buffer,
+    std::span<const std::byte> data,
+    int data_width,
+    int data_height)
+{
     void* mapped = SDL_MapGPUTransferBuffer(
-        _device.native(), _transfer_buffer, true);
+        _device.native(),
+        _transfer_buffer,
+        true
+    );
 
     if (!mapped) {
         throw std::runtime_error(
             std::string("No se pudo mapear el buffer de transferencia: ") +
-            SDL_GetError());
+            SDL_GetError()
+        );
     }
 
     std::memcpy(mapped, data.data(), data.size());
-    SDL_UnmapGPUTransferBuffer(_device.native(), _transfer_buffer);
+
+    SDL_UnmapGPUTransferBuffer(
+        _device.native(),
+        _transfer_buffer
+    );
 
     SDL_GPUTextureTransferInfo source{};
     source.transfer_buffer = _transfer_buffer;
@@ -571,7 +528,9 @@ void gpu_renderer::draw_pixels(
     destination_region.texture = _input_texture;
     destination_region.mip_level = 0;
     destination_region.layer = 0;
-    destination_region.x = destination_region.y = destination_region.z = 0;
+    destination_region.x = 0;
+    destination_region.y = 0;
+    destination_region.z = 0;
     destination_region.w = static_cast<Uint32>(data_width);
     destination_region.h = static_cast<Uint32>(data_height);
     destination_region.d = 1;
@@ -582,33 +541,54 @@ void gpu_renderer::draw_pixels(
     if (!copy_pass) {
         throw std::runtime_error(
             std::string("No se pudo iniciar el copy pass: ") +
-            SDL_GetError());
+            SDL_GetError()
+        );
     }
 
     SDL_UploadToGPUTexture(
-        copy_pass, &source, &destination_region, true);
-    SDL_EndGPUCopyPass(copy_pass);
+        copy_pass,
+        &source,
+        &destination_region,
+        true
+    );
 
+    SDL_EndGPUCopyPass(copy_pass);
+}
+
+void gpu_renderer::render_input_texture(
+    SDL_GPUCommandBuffer* command_buffer,
+    std::span<const std::byte> uniforms,
+    graphics::color clear_color,
+    SDL_GPUGraphicsPipeline* pipeline)
+{
     SDL_GPUColorTargetInfo target{};
     target.texture = _output_texture.native();
     target.mip_level = 0;
     target.layer_or_depth_plane = 0;
     target.clear_color = {
-        clear_color.r, clear_color.g, clear_color.b, clear_color.a
+        clear_color.r,
+        clear_color.g,
+        clear_color.b,
+        clear_color.a
     };
     target.load_op = SDL_GPU_LOADOP_CLEAR;
     target.store_op = SDL_GPU_STOREOP_STORE;
 
     SDL_GPURenderPass* render_pass = SDL_BeginGPURenderPass(
-        command_buffer, &target, 1, nullptr);
+        command_buffer,
+        &target,
+        1,
+        nullptr
+    );
 
     if (!render_pass) {
         throw std::runtime_error(
             std::string("No se pudo iniciar el render pass: ") +
-            SDL_GetError());
+            SDL_GetError()
+        );
     }
 
-    SDL_BindGPUGraphicsPipeline(render_pass, _pixel_pipeline);
+    SDL_BindGPUGraphicsPipeline(render_pass, pipeline);
 
     const SDL_GPUViewport viewport{
         0.0f,
@@ -625,7 +605,12 @@ void gpu_renderer::draw_pixels(
     binding.texture = _input_texture;
     binding.sampler = _sampler;
 
-    SDL_BindGPUFragmentSamplers(render_pass, 0, &binding, 1);
+    SDL_BindGPUFragmentSamplers(
+        render_pass,
+        0,
+        &binding,
+        1
+    );
 
     SDL_PushGPUFragmentUniformData(
         command_buffer,

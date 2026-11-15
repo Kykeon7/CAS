@@ -5,7 +5,7 @@
   "last_workspace_path": "",
   "load_workspace_on_startup": true,
   "save_workspace_on_exit": true,
-  "save_imgui_layout": true
+  "save_imgui_layout": true,
   {
     "randomization": {
       "two_state": [ 50, 50 ],

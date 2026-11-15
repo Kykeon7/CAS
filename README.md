@@ -53,7 +53,7 @@ git clone --recurse-submodules https://github.com/Kykeon7/CAS.git
 Para clonar una rama específica:
 
 ```bash
-git clone --recurse-submodules -b cmake-migration https://github.com/Kykeon7/CAS.git
+git clone --recurse-submodules -b master https://github.com/Kykeon7/CAS.git
 ```
 
 Si el repositorio ya fue clonado sin inicializar los submódulos, ejecutar:
@@ -69,7 +69,7 @@ git submodule update --init --recursive
 ## 1. Clonar el repositorio
 
 ```powershell
-git clone --recurse-submodules -b cmake-migration https://github.com/Kykeon7/CAS.git
+git clone --recurse-submodules -b master https://github.com/Kykeon7/CAS.git
 cd CAS
 ```
 
@@ -147,7 +147,7 @@ echo 'export VCPKG_ROOT="$HOME/vcpkg"' >> ~/.bashrc
 ## 3. Clonar el repositorio
 
 ```bash
-git clone --recurse-submodules -b cmake-migration https://github.com/Kykeon7/CAS.git
+git clone --recurse-submodules -b master https://github.com/Kykeon7/CAS.git
 cd CAS
 ```
 
@@ -191,8 +191,7 @@ CAS/
 
 # 🔀 Ramas
 
-- `main` → Versión original basada en Visual Studio (.sln).
-- `cmake-migration` → Versión multiplataforma basada en CMake.
+- `master` → Versión multiplataforma basada en CMake.
 
 ---
 

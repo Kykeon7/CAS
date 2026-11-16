@@ -5,6 +5,7 @@
 #include <utility>
 
 #include <automata/rules/factory.h>
+#include <automata/rules/binary.h>
 #include <automata/rules/rule_22_majority_memory.h>
 #include <automata/topologies.h>
 
@@ -120,6 +121,8 @@ void simulation::set_rule(std::unique_ptr<automata::rules::rule> rule) {
     automata::topology new_topology =
         dynamic_cast<const class automata::rules::rule_22_majority_memory*>(rule.get())
         ? automata::topologies::linear_finite()
+        : dynamic_cast<const automata::rules::binary*>(rule.get())
+        ? automata::topologies::moore_finite()
         : automata::topologies::hex_finite();
 
     new_topology.set_boundary(boundary);

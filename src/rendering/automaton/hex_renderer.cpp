@@ -339,6 +339,51 @@ void hex_renderer::draw_grid(
     }
 }
 
+void hex_renderer::draw_moore(
+    const automata::automaton& automaton,
+    const config& config,
+    const cas::viewports::camera& camera
+) {
+    const int width = automaton.width();
+    const int height = automaton.height();
+    const float size = config.cell_size * camera.zoom();
+    if (size <= 0.0f)
+        return;
+
+    const auto& states = automaton.storage().current();
+    const auto grid_pixel = to_rgba32(config.grid_color);
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            const math::vec2f world{
+                (x - width / 2) * config.cell_size + config.offset.x,
+                (y - height / 2) * config.cell_size + config.offset.y
+            };
+            const auto screen = camera.world_to_screen(world);
+            const float half_size = size * 0.5f;
+            if (screen.x + half_size < 0.0f ||
+                screen.y + half_size < 0.0f ||
+                screen.x - half_size >= _size.x ||
+                screen.y - half_size >= _size.y)
+                continue;
+
+            const auto state = states[static_cast<std::size_t>(y) * width + x];
+            if (state != 0)
+                draw_square(screen, size, to_rgba32(
+                    state == 1 ? config.alive_color : config.persistent_color
+                ));
+
+            const math::vec2f tl{screen.x - half_size, screen.y - half_size};
+            const math::vec2f tr{screen.x + half_size, screen.y - half_size};
+            const math::vec2f bl{screen.x - half_size, screen.y + half_size};
+            const math::vec2f br{screen.x + half_size, screen.y + half_size};
+            draw_line(tl, tr, grid_pixel);
+            draw_line(tr, br, grid_pixel);
+            draw_line(br, bl, grid_pixel);
+            draw_line(bl, tl, grid_pixel);
+        }
+    }
+}
+
 void hex_renderer::draw_linear_history(
     const viewports::linear_history& history,
     const config& config,
@@ -419,6 +464,50 @@ void hex_renderer::draw_linear_history(
             );
         }
     }
+
+    // Draw the square grid over the complete history, including dead cells.
+    // Only rasterize lines intersecting the viewport.
+    if (screen_cell_size < 3.0f)
+        return;
+
+    const auto grid_pixel = to_rgba32(config.grid_color);
+    const float left = -half_width * cell_size + config.offset.x
+        - cell_size * 0.5f;
+    const float right = left + history_width * cell_size;
+    const float top = config.offset.y - cell_size * 0.5f;
+    const float bottom = top + history_height * cell_size;
+
+    const auto top_left = camera.world_to_screen({left, top});
+    const auto bottom_right = camera.world_to_screen({right, bottom});
+
+    const int min_x = std::max(0, static_cast<int>(std::floor(
+        (0.0f - top_left.x) / screen_cell_size)));
+    const int max_x = std::min(history_width, static_cast<int>(std::ceil(
+        (static_cast<float>(_size.x) - top_left.x) / screen_cell_size)));
+    const int min_y = std::max(0, static_cast<int>(std::floor(
+        (0.0f - top_left.y) / screen_cell_size)));
+    const int max_y = std::min(history_height, static_cast<int>(std::ceil(
+        (static_cast<float>(_size.y) - top_left.y) / screen_cell_size)));
+
+    const float clipped_left = std::max(0.0f, top_left.x);
+    const float clipped_right = std::min(
+        static_cast<float>(_size.x - 1), bottom_right.x);
+    const float clipped_top = std::max(0.0f, top_left.y);
+    const float clipped_bottom = std::min(
+        static_cast<float>(_size.y - 1), bottom_right.y);
+
+    if (clipped_left > clipped_right || clipped_top > clipped_bottom)
+        return;
+
+    for (int x = min_x; x <= max_x; ++x) {
+        const float screen_x = top_left.x + x * screen_cell_size;
+        draw_line({screen_x, clipped_top}, {screen_x, clipped_bottom}, grid_pixel);
+    }
+
+    for (int y = min_y; y <= max_y; ++y) {
+        const float screen_y = top_left.y + y * screen_cell_size;
+        draw_line({clipped_left, screen_y}, {clipped_right, screen_y}, grid_pixel);
+    }
 }
 
 std::optional<std::reference_wrapper<platform::texture>>
@@ -443,6 +532,9 @@ hex_renderer::render(
             return std::nullopt;
 
         draw_linear_history(history, config, camera);
+    }
+    else if (automaton.topology().is_moore()) {
+        draw_moore(automaton, config, camera);
     }
     else {
         draw_cells(automaton, config, camera);

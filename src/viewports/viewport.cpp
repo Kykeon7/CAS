@@ -60,6 +60,20 @@ void viewport::handle_input(
                 }
             }
         }
+        else if (automaton.topology().is_moore()) {
+            if (_config.cell_size > 0.0f) {
+                const float grid_x =
+                    (world.x - _config.offset.x) / _config.cell_size +
+                    automaton.width() * 0.5f;
+                const float grid_y =
+                    (world.y - _config.offset.y) / _config.cell_size +
+                    automaton.height() * 0.5f;
+
+                const int x = static_cast<int>(std::floor(grid_x + 0.5f));
+                const int y = static_cast<int>(std::floor(grid_y + 0.5f));
+                _simulation.cycle_cell_state(x, y);
+            }
+        }
         else {
             const auto [q, r] = _layout.world_to_hex(
                 world.x,

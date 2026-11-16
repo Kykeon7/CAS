@@ -17,6 +17,15 @@ namespace cas::automata::topologies {
     }, boundary_type::finite);
 }
 
+/// @brief Returns a finite square topology with eight Moore neighbors.
+[[nodiscard]] inline topology moore_finite() {
+    return topology({
+        {-1, -1}, {0, -1}, {1, -1},
+        {-1,  0},          {1,  0},
+        {-1,  1}, {0,  1}, {1,  1}
+    }, boundary_type::finite);
+}
+
 /// @brief Returns a finite linear topology.
 /// @return A topology with two horizontal neighbor directions.
 [[nodiscard]] inline topology linear_finite() {

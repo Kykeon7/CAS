@@ -1,6 +1,8 @@
 
 #include <automata/topology.h>
 
+#include <algorithm>
+
 #include <cstdint>
 #include <limits>
 #include <stdexcept>
@@ -154,6 +156,24 @@ bool topology::is_linear() const noexcept {
         (first.first == 1 && first.second == 0 &&
             second.first == -1 && second.second == 0)
     );
+}
+
+bool topology::is_moore() const noexcept {
+    if (_directions.size() != 8)
+        return false;
+
+    constexpr std::pair<int, int> moore[] = {
+        {-1, -1}, {0, -1}, {1, -1},
+        {-1,  0},          {1,  0},
+        {-1,  1}, {0,  1}, {1,  1}
+    };
+
+    for (const auto& direction : moore) {
+        if (std::count(_directions.begin(), _directions.end(), direction) != 1)
+            return false;
+    }
+
+    return true;
 }
 
 } // namespace cas::automata

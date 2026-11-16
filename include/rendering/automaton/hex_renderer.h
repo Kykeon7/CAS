@@ -132,6 +132,13 @@ private:
         const cas::viewports::camera& camera
     );
 
+    /** Draws cells and grid for a square Moore-neighborhood automaton. */
+    void draw_moore(
+        const automata::automaton& automaton,
+        const config& config,
+        const cas::viewports::camera& camera
+    );
+
     /** Draws the generation history of a linear automaton. */
     void draw_linear_history(
         const viewports::linear_history& history,

@@ -44,9 +44,10 @@ struct alignas(16) pixel_config {
 
     float background_color[4]{};
     float alive_color[4]{};
+    float grid_color[4]{};
 };
 
-static_assert(sizeof(pixel_config) == 80);
+static_assert(sizeof(pixel_config) == 96);
 
 void copy_color(float* destination, const graphics::color& source) {
     destination[0] = source.r;
@@ -170,6 +171,7 @@ gpu_renderer::render(
 
         copy_color(uniforms.background_color, config.background_color);
         copy_color(uniforms.alive_color, config.alive_color);
+        copy_color(uniforms.grid_color, config.grid_color);
 
         const auto uniform_bytes = std::as_bytes(
             std::span{ &uniforms, std::size_t{1} }
@@ -183,6 +185,34 @@ gpu_renderer::render(
             data,
             history_width,
             history_height,
+            uniform_bytes,
+            config.background_color
+        );
+    }
+    else if (automaton.topology().is_moore()) {
+        // Reuse the square-cell pixel shader for Moore neighborhoods.
+        pixel_config uniforms{};
+        uniforms.grid_width = grid_width;
+        uniforms.grid_height = grid_height;
+        uniforms.viewport_size[0] = static_cast<float>(_viewport_size.x);
+        uniforms.viewport_size[1] = static_cast<float>(_viewport_size.y);
+        uniforms.camera_position[0] = camera.position().x;
+        uniforms.camera_position[1] = camera.position().y;
+        uniforms.zoom = camera.zoom();
+        uniforms.cell_size = config.cell_size;
+        uniforms.world_offset[0] = config.offset.x;
+        uniforms.world_offset[1] = config.offset.y;
+        copy_color(uniforms.background_color, config.background_color);
+        copy_color(uniforms.alive_color, config.alive_color);
+        copy_color(uniforms.grid_color, config.grid_color);
+
+        const auto uniform_bytes = std::as_bytes(
+            std::span{ &uniforms, std::size_t{1} }
+        );
+        _renderer.draw_pixels(
+            data_bytes,
+            grid_width,
+            grid_height,
             uniform_bytes,
             config.background_color
         );
@@ -209,6 +239,7 @@ gpu_renderer::render(
         copy_color(uniforms.background_color, config.background_color);
         copy_color(uniforms.grid_color, config.grid_color);
         copy_color(uniforms.alive_color, config.alive_color);
+        copy_color(uniforms.grid_color, config.grid_color);
         copy_color(uniforms.persistent_color, config.persistent_color);
 
         const auto uniform_bytes = std::as_bytes(

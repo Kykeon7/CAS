@@ -22,6 +22,7 @@ cbuffer pixel_config : register(b0, space3)
 
     float4 background_color;
     float4 alive_color;
+    float4 grid_color;
 };
 
 float4 fragment_main(vertex_output input) : SV_Target0
@@ -34,8 +35,9 @@ float4 fragment_main(vertex_output input) : SV_Target0
 
     world -= world_offset;
 
+    // Cell centers are integer-aligned in world space.
     float2 grid_position = world / cell_size
-        + float2(grid_width, grid_height) * 0.5;
+        + float2(grid_width, grid_height) * 0.5 + 0.5;
 
     int2 cell = int2(floor(grid_position));
 
@@ -57,7 +59,20 @@ float4 fragment_main(vertex_output input) : SV_Target0
 
     int state = (int) round(state_value * 255.0);
 
-    return state != 0
+    float4 cell_color = state != 0
         ? alive_color
         : background_color;
+
+    // One-screen-pixel outlines, disabled when cells become too small.
+    float screen_cell_size = cell_size * zoom;
+    if (screen_cell_size >= 3.0)
+    {
+        float2 fractional = frac(grid_position);
+        float line_width = 1.0 / screen_cell_size;
+
+        if (fractional.x < line_width || fractional.y < line_width)
+            return grid_color;
+    }
+
+    return cell_color;
 }

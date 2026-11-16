@@ -89,6 +89,10 @@ public:
     ///         and (1, 0), regardless of their order.
     bool is_linear() const noexcept;
 
+    /// @brief Checks whether the topology uses the eight Moore neighbors.
+    /// @return True if all eight square-grid offsets are present.
+    bool is_moore() const noexcept;
+
 private:
     std::vector<std::pair<int, int>> _directions;
     boundary_type _boundary{ boundary_type::finite };

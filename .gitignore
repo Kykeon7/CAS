@@ -371,3 +371,13 @@ out/
 *.pdb
 
 *.dll
+
+# CAS local configuration
+/CMakeSettings.json
+/config/config.json
+
+# CMake and vcpkg
+/build/
+/cmake-build-*/
+/vcpkg_installed/
+/CMakeUserPresets.json

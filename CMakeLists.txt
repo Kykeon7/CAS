@@ -125,14 +125,18 @@ add_executable(CAS
     src/automata/automaton.cpp
     src/automata/grid_storage.cpp
     src/automata/pattern.cpp
+    src/automata/pattern_tests.cpp
+    src/automata/experiment_presets.cpp
     src/automata/topology.cpp
 
+    # Rules
     # Rules
     src/automata/rules/beehive.cpp
     src/automata/rules/binary.cpp
     src/automata/rules/factory.cpp
     src/automata/rules/rule_22_majority_memory.cpp
     src/automata/rules/spiral.cpp
+    src/automata/rules/spiral_variant.cpp
 
     # --------------------------------------------------------
     # Files
@@ -168,6 +172,7 @@ add_executable(CAS
     src/gui/panels/file.cpp
     src/gui/panels/graphs.cpp
     src/gui/panels/help.cpp
+    src/gui/panels/patterns.cpp
     src/gui/panels/simulation.cpp
     src/gui/panels/stats.cpp
     src/gui/panels/viewport.cpp
@@ -231,7 +236,7 @@ add_executable(CAS
     src/viewports/linear_history.cpp
 
     src/workspace/workspace.cpp
- "src/automata/rules/spiral_variant.cpp")
+)
 
 # ============================================================
 # Platform-specific application resources
@@ -277,6 +282,13 @@ if(MSVC)
     target_compile_options(CAS PRIVATE
         /W4
         /permissive-
+        /utf-8
+    )
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(CAS PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
     )
 endif()
 

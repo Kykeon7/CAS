@@ -69,6 +69,7 @@ void layout::build_default_layout() {
 
     ImGui::DockBuilderDockWindow("Help", dock_right);
     ImGui::DockBuilderDockWindow("Stats", dock_right);
+    ImGui::DockBuilderDockWindow("Patterns", dock_right);
 
     ImGui::DockBuilderDockWindow("Graphs", dock_bottom);
     ImGui::DockBuilderDockWindow("Viewport", dock_main);

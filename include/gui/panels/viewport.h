@@ -1,8 +1,11 @@
+
 #pragma once
 
 #include <gui/panels/panel.h>
 #include <inputs/input.h>
 #include <viewports/manager.h>
+
+struct ImVec2;
 
 namespace cas::gui::panels {
 
@@ -36,6 +39,13 @@ public:
      * @brief Renders the viewport panel and handles its input.
      */
     void render() override;
+
+private:
+    void render_pattern_preview(
+        cas::viewports::viewport& active_viewport,
+        const ImVec2& viewport_pos,
+        const ImVec2& available
+    );
 
 private:
     cas::viewports::manager& _viewports;

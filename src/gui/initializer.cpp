@@ -8,6 +8,7 @@
 #include <gui/panels/file.h>
 #include <gui/panels/graphs.h>
 #include <gui/panels/help.h>
+#include <gui/panels/patterns.h>
 #include <gui/panels/simulation.h>
 #include <gui/panels/stats.h>
 #include <gui/panels/viewport.h>
@@ -48,6 +49,7 @@ void initializer::initialize(
     panels.create<panels::appearance>(viewport_view);
     panels.create<panels::graphs>(viewport_view);
     panels.create<panels::help>();
+    panels.create<panels::patterns>(viewport_view);
     panels.create<panels::file>(dialog_service);
     panels.create<panels::viewport>(viewports, input);
 
@@ -56,6 +58,7 @@ void initializer::initialize(
     panels.register_panel("Appearance");
     panels.register_panel("Graphs");
     panels.register_panel("Help");
+    panels.register_panel("Patterns");
     panels.register_panel("File");
     panels.register_panel("Viewport");
 
@@ -74,6 +77,10 @@ void initializer::initialize(
 
     layout.create_container("Graphs").add_panel(
         panels.get<panels::graphs>()
+    );
+
+    layout.create_container("Patterns").add_panel(
+        panels.get<panels::patterns>()
     );
 
     layout.create_container("Help").add_panel(

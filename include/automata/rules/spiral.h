@@ -8,8 +8,10 @@
 
 namespace cas::automata::rules {
 
-/// @brief Implements a three-state cellular automaton rule.
-/// @details The rule supports three cell states: 0, 1, and 2.
+/// @brief Implements a variant of the Spiral cellular automaton rule.
+/// @details This variant differs from the published Spiral rule
+///          in three transition table entries.
+///          The rule supports three cell states: 0, 1, and 2.
 ///          Its transition behavior is defined by an 8x8 lookup table
 ///          indexed by the total number of cells in states 1 and 2,
 ///          including the center cell.
@@ -44,13 +46,13 @@ private:
         8
     > _table{ {
         // state_2 = 0
-        {{ 0, 1, 2, 1, 2, 2, 2, 0 }},
+        {{ 0, 1, 2, 1, 2, 2, 2, 2 }},
 
         // state_2 = 1
         {{ 0, 2, 2, 1, 2, 2, 2, 0 }},
 
         // state_2 = 2
-        {{ 0, 0, 2, 2, 1, 2, 0, 0 }},
+        {{ 0, 0, 2, 1, 2, 2, 0, 0 }},
 
         // state_2 = 3
         {{ 0, 2, 2, 1, 2, 0, 0, 0 }},

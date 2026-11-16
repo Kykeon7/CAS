@@ -26,6 +26,11 @@ automata::cell_state spiral::next(
         );
     }
 
+    if (stats.state_1 + stats.state_2 > 7)
+        throw std::invalid_argument(
+            "Invalid state counts for the Spiral rule."
+    );
+
     return _table[stats.state_2][stats.state_1];
 }
 

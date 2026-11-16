@@ -10,6 +10,8 @@
 #include <string>
 #include <vector>   
 
+#include <system/logger.h>
+
 namespace cas::platform {
 namespace {
 
@@ -66,32 +68,64 @@ std::vector<Uint8> load_shader_file(const char* filename) {
     return { bytes, bytes + size };
 }
 
+
 SDL_GPUShader* create_shader(
     SDL_GPUDevice* device,
-    const char* filename,
+    const char* base_name,
     const char* entrypoint,
     SDL_GPUShaderStage stage,
     Uint32 num_samplers,
     Uint32 num_uniform_buffers)
 {
-    const std::vector<Uint8> code = load_shader_file(filename);
+    const SDL_GPUShaderFormat formats =
+        SDL_GetGPUShaderFormats(device);
+
+    SDL_GPUShaderFormat format;
+    const char* extension;
+
+    if (formats & SDL_GPU_SHADERFORMAT_SPIRV) {
+        format = SDL_GPU_SHADERFORMAT_SPIRV;
+        extension = ".spv";
+    }
+    else if (formats & SDL_GPU_SHADERFORMAT_DXIL) {
+        format = SDL_GPU_SHADERFORMAT_DXIL;
+        extension = ".dxil";
+    }
+    else {
+        throw std::runtime_error(
+            "No supported GPU shader format is available."
+        );
+    }
+
+    const std::string filename =
+        std::string(base_name) + extension;
+
+    system::logger::instance().info(
+        "Renderer",
+        "Loading GPU shader: " + filename
+    );
+
+    const std::vector<Uint8> code =
+        load_shader_file(filename.c_str());
 
     SDL_GPUShaderCreateInfo info{};
     info.code_size = code.size();
     info.code = code.data();
     info.entrypoint = entrypoint;
-    info.format = SDL_GPU_SHADERFORMAT_DXIL;
+    info.format = format;
     info.stage = stage;
     info.num_samplers = num_samplers;
     info.num_uniform_buffers = num_uniform_buffers;
 
-    SDL_GPUShader* shader = SDL_CreateGPUShader(device, &info);
+    SDL_GPUShader* shader =
+        SDL_CreateGPUShader(device, &info);
 
-    if (!shader)
+    if (!shader) {
         throw std::runtime_error(
-            "No se pudo crear el shader: " + std::string(filename) +
-            ". " + SDL_GetError()
+            "Failed to create GPU shader: " +
+            filename + ". " + SDL_GetError()
         );
+    }
 
     return shader;
 }
@@ -276,7 +310,7 @@ void gpu_renderer::create_pipeline() {
 
     _vertex_shader = create_shader(
         device,
-        "automaton_vertex.dxil",
+        "automaton_vertex",
         "vertex_main",
         SDL_GPU_SHADERSTAGE_VERTEX,
         0,
@@ -285,7 +319,7 @@ void gpu_renderer::create_pipeline() {
 
     _fragment_shader = create_shader(
         device,
-        "automaton_fragment.dxil",
+        "automaton_fragment",
         "fragment_main",
         SDL_GPU_SHADERSTAGE_FRAGMENT,
         1,
@@ -347,7 +381,7 @@ void gpu_renderer::create_pixel_pipeline() {
 
     _pixel_fragment_shader = create_shader(
         device,
-        "automaton_pixels_fragment.dxil",
+        "automaton_pixels_fragment",
         "fragment_main",
         SDL_GPU_SHADERSTAGE_FRAGMENT,
         1,

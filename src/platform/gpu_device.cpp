@@ -3,6 +3,8 @@
 #include <stdexcept>
 #include <string>
 
+#include <system/logger.h>
+
 namespace cas::platform {
 
 gpu_device::gpu_device(window& window)
@@ -39,6 +41,44 @@ gpu_device::gpu_device(window& window)
 
         throw std::runtime_error(error);
     }
+
+    const char* driver = SDL_GetGPUDeviceDriver(device_);
+
+    system::logger::instance().info(
+        "Renderer",
+        std::string("GPU driver: ") +
+        (driver ? driver : "Unknown")
+    );
+
+    const SDL_GPUShaderFormat formats =
+        SDL_GetGPUShaderFormats(device_);
+
+    std::string supported_formats;
+
+    if (formats & SDL_GPU_SHADERFORMAT_SPIRV)
+        supported_formats += "SPIR-V, ";
+
+    if (formats & SDL_GPU_SHADERFORMAT_DXIL)
+        supported_formats += "DXIL, ";
+
+    if (formats & SDL_GPU_SHADERFORMAT_DXBC)
+        supported_formats += "DXBC, ";
+
+    if (formats & SDL_GPU_SHADERFORMAT_MSL)
+        supported_formats += "MSL, ";
+
+    if (formats & SDL_GPU_SHADERFORMAT_METALLIB)
+        supported_formats += "METALLIB, ";
+
+    if (!supported_formats.empty())
+        supported_formats.erase(supported_formats.size() - 2);
+    else
+        supported_formats = "None";
+
+    system::logger::instance().info(
+        "Renderer",
+        "Supported shader formats: " + supported_formats
+    );
 }
 
 gpu_device::~gpu_device() {

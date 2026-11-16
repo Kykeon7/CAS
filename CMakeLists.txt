@@ -231,7 +231,7 @@ add_executable(CAS
     src/viewports/linear_history.cpp
 
     src/workspace/workspace.cpp
-)
+ "src/automata/rules/spiral_variant.cpp")
 
 # ============================================================
 # Platform-specific application resources

@@ -5,15 +5,18 @@
 #include <span>
 
 #include <automata/automaton.h>
+#include <system/fixed_step_accumulator.h>
 
 namespace cas::simulations {
 
 /**
  * @brief Coordinates the execution and configuration of a cellular automaton simulation.
  *
- * Manages the automaton, its execution speed, and its running state.
- * Provides operations for advancing, randomizing, resizing, and modifying
- * the automaton.
+ * Manages the automaton, its execution speed, running state, and
+ * independent fixed-step timing.
+ *
+ * The timing accumulator is transient and is not part of the
+ * serialized simulation state.
  */
 class simulation {
 public:
@@ -21,17 +24,45 @@ public:
      * @brief Constructs a simulation with its default automaton configuration.
      *
      * Creates a 1000x1000 automaton using a finite hexagonal topology
-     * and the spiral rule.
+     * and the spiral rule. The timing accumulator starts at zero.
      */
     simulation();
 
     /**
      * @brief Advances the automaton by one generation.
+     *
+     * Does not consume accumulated simulation time.
      */
     void step();
 
     /**
+     * @brief Calculates the number of generations to execute.
+     *
+     * Accumulates elapsed simulation time and converts it into fixed
+     * generation intervals. Excess complete intervals are discarded
+     * when the maximum number of steps is reached.
+     *
+     * Returns zero while the simulation is stopped.
+     *
+     * @param delta_time Elapsed simulation time in seconds.
+     * @param max_steps Maximum generations allowed per update.
+     * @return Number of generations to execute.
+     * @throws std::invalid_argument If timing arguments are invalid.
+     */
+    [[nodiscard]]
+    int pending_steps(double delta_time, int max_steps = 8);
+
+    /**
+     * @brief Discards accumulated simulation time.
+     *
+     * Does not modify the automaton state or generation counter.
+     */
+    void reset_timing() noexcept;
+
+    /**
      * @brief Randomizes the automaton using the specified seed.
+     *
+     * Does not reset accumulated simulation time.
      *
      * @param seed Seed used by the random number generator.
      */
@@ -39,6 +70,8 @@ public:
 
     /**
      * @brief Randomizes the automaton using the specified state percentages and seed.
+     *
+     * Does not reset accumulated simulation time.
      *
      * @param percentages Percentage distribution used to initialize cell states.
      * @param seed Seed used by the random number generator.
@@ -69,9 +102,12 @@ public:
     /**
      * @brief Sets the simulation speed.
      *
+     * Resets accumulated simulation time when the speed changes.
+     *
      * @param speed Number of generations per second.
+     * @throws std::invalid_argument If speed is not finite or positive.
      */
-    void set_speed(float speed) { _speed = speed; }
+    void set_speed(float speed);
 
     /**
      * @brief Returns the configured simulation speed.
@@ -84,6 +120,7 @@ public:
      * @brief Advances the state of a cell to its next state.
      *
      * Does nothing if the specified coordinates are outside the automaton.
+     * Does not reset accumulated simulation time.
      *
      * @param x Horizontal cell coordinate.
      * @param y Vertical cell coordinate.
@@ -103,13 +140,16 @@ public:
 
     /**
      * @brief Toggles the simulation's running state.
+     *
+     * Discards accumulated time when the running state changes.
      */
-    void toggle() { _running = !_running; }
+    void toggle();
 
     /**
      * @brief Resizes the automaton.
      *
      * Does nothing if either dimension is less than one.
+     * Resets accumulated simulation time after a successful resize.
      *
      * @param width New automaton width in cells.
      * @param height New automaton height in cells.
@@ -118,11 +158,15 @@ public:
 
     /**
      * @brief Resets the automaton to its clean state.
+     *
+     * Also resets accumulated simulation time.
      */
     void clean();
 
     /**
      * @brief Sets the boundary condition of the automaton's topology.
+     *
+     * Resets accumulated simulation time after the change.
      *
      * @param boundary Boundary condition to apply.
      */
@@ -143,6 +187,7 @@ public:
      * boundary condition of the current topology.
      *
      * Does nothing if the supplied rule is null.
+     * Resets accumulated simulation time after a successful change.
      *
      * @param rule Rule to take ownership of.
      */
@@ -175,6 +220,9 @@ public:
 
 private:
     automata::automaton _automaton;
+
+    system::fixed_step_accumulator _step_accumulator;
+
     float _speed = 10.0f;
     bool _running = false;
 };

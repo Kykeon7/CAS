@@ -1,8 +1,9 @@
 #include <viewports/viewport.h>
 
 #include <algorithm>
-#include <utility>
+#include <cmath>
 #include <stdexcept>
+#include <utility>
 
 #include <automata/rules/factory.h>
 #include <automata/topologies.h>
@@ -19,7 +20,6 @@ viewport::viewport(
     : _renderer(std::move(renderer))
 {
 }
-
 
 void viewport::handle_input(
     const inputs::input& input,
@@ -52,7 +52,7 @@ void viewport::handle_input(
                 if (
                     cell_index >= 0.0f &&
                     cell_index < automaton.width()
-                    ) {
+                ) {
                     _simulation.cycle_cell_state(
                         static_cast<int>(cell_index),
                         0
@@ -91,35 +91,37 @@ void viewport::handle_input(
     }
 }
 
-
 void viewport::update_sim() {
-    auto& time = time::instance();
+    constexpr int max_steps_per_frame = 8;
 
-    if (!_simulation.is_running())
+    const int steps = _simulation.pending_steps(
+        time::instance().delta_time(),
+        max_steps_per_frame
+    );
+
+    if (steps == 0)
         return;
 
-    if (time.every(1 / _simulation.speed(), 0)) {
+    auto& profiler = system::profiler::instance();
 
-        auto& profiler = system::profiler::instance();
+    profiler.begin(system::profile_id::update);
 
-        profiler.begin(system::profile_id::update);
+    for (int i = 0; i < steps; ++i) {
         _simulation.step();
-        profiler.end(system::profile_id::update);
 
         _linear_history.record(_simulation.automaton());
 
         const float population = static_cast<float>(
             _simulation.state_count(1)
-            );
+        );
 
         const float total = static_cast<float>(
             _simulation.width() * _simulation.height()
-            );
+        );
 
         const float density =
             total > 0.0f ? population / total : 0.0f;
 
-        // Recuperar la muestra anterior antes de insertar la nueva.
         const auto previous_samples =
             _population_history.samples();
 
@@ -138,8 +140,9 @@ void viewport::update_sim() {
             );
         }
     }
-}
 
+    profiler.end(system::profile_id::update);
+}
 
 std::optional<std::reference_wrapper<platform::texture>>
 viewport::render() {

@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <functional>
@@ -58,11 +57,15 @@ public:
     );
 
     /**
-     * Advances the simulation when its configured update interval
-     * has elapsed.
+     * @brief Advances the simulation using independent fixed-step timing.
+     *
+     * Retrieves the number of generations scheduled by the simulation
+     * and executes them up to the configured per-frame limit.
      *
      * Records linear automaton history and updates population,
-     * density, and activity histories after each simulation step.
+     * density, and activity histories after each generation.
+     *
+     * Simulation timing is managed by the simulation itself.
      */
     void update_sim();
 

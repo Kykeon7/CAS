@@ -111,6 +111,7 @@ public:
      * @return True if the interval has elapsed, or false otherwise.
      * @throws std::invalid_argument If the interval is not finite and positive.
      */
+    [[maybe_unused]]
     bool every(double interval, int id = 0);
 
 private:

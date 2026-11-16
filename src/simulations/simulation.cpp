@@ -1,5 +1,7 @@
 #include <simulations/simulation.h>
 
+#include <cmath>
+#include <stdexcept>
 #include <utility>
 
 #include <automata/rules/factory.h>
@@ -20,6 +22,42 @@ simulation::simulation()
 
 void simulation::step() {
     _automaton.step();
+}
+
+int simulation::pending_steps(
+    double delta_time,
+    int max_steps
+) {
+    if (!_running)
+        return 0;
+
+    return _step_accumulator.advance(
+        delta_time,
+        1.0 / static_cast<double>(_speed),
+        max_steps
+    );
+}
+
+void simulation::reset_timing() noexcept {
+    _step_accumulator.reset();
+}
+
+void simulation::set_speed(float speed) {
+    if (!std::isfinite(speed) || speed <= 0.0f)
+        throw std::invalid_argument(
+            "Simulation speed must be finite and positive."
+        );
+
+    if (_speed == speed)
+        return;
+
+    _speed = speed;
+    reset_timing();
+}
+
+void simulation::toggle() {
+    _running = !_running;
+    reset_timing();
 }
 
 void simulation::randomize(std::uint32_t seed) {
@@ -59,14 +97,17 @@ void simulation::resize(int width, int height) {
         return;
 
     _automaton.resize(width, height);
+    reset_timing();
 }
 
 void simulation::clean() {
     _automaton.clean();
+    reset_timing();
 }
 
 void simulation::set_boundary(automata::boundary_type boundary) {
     _automaton.set_boundary(boundary);
+    reset_timing();
 }
 
 void simulation::set_rule(std::unique_ptr<automata::rules::rule> rule) {
@@ -85,6 +126,8 @@ void simulation::set_rule(std::unique_ptr<automata::rules::rule> rule) {
 
     _automaton.set_topology(new_topology);
     _automaton.set_rule(std::move(rule));
+
+    reset_timing();
 }
 
 } // namespace cas::simulations

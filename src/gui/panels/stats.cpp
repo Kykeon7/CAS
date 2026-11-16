@@ -460,7 +460,9 @@ void stats::render() {
             std::int64_t active_cells = 0;
 
             for (int state = 0; state < automaton.rule().state_count(); ++state) {
-                const auto state_count = automaton.state_count(state);
+                const auto state_count = automaton.state_count(
+                    static_cast<automata::cell_state>(state)
+                );
 
                 total_cells += state_count;
 
@@ -492,7 +494,9 @@ void stats::render() {
                 draw_stat_label(label, label_color);
 
                 draw_state_count(
-                    automaton.state_count(state),
+                    automaton.state_count(
+                        static_cast<automata::cell_state>(state)
+                    ),
                     state_color
                 );
             }

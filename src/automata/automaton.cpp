@@ -61,6 +61,7 @@ automaton& automaton::operator=(automaton&&) = default;
 
 automaton::~automaton() = default;
 
+
 void automaton::step() {
     const int memory_depth = _rule->memory_depth();
 
@@ -69,10 +70,14 @@ void automaton::step() {
             "Rule memory depth cannot be negative."
         );
 
+    const std::size_t history_size =
+        memory_depth > 0
+        ? static_cast<std::size_t>(memory_depth - 1)
+        : 0;
+
     const bool requires_history =
         memory_depth > 0 &&
-        (!_history_valid ||
-            _history.size() != static_cast<std::size_t>(memory_depth));
+        (!_history_valid || _history.size() != history_size);
 
     if (requires_history)
         reset_history();
@@ -85,8 +90,7 @@ void automaton::step() {
 
     // Build the temporally summarized configuration.
     if (memory_depth > 0) {
-        const int sample_count = memory_depth + 1;
-        const int majority_threshold = sample_count / 2;
+        const int majority_threshold = memory_depth / 2;
 
         for (int index = 0; index < cell_count; ++index) {
             int alive_count = current[index] == 1;
@@ -94,8 +98,17 @@ void automaton::step() {
             for (const auto& previous : _history)
                 alive_count += previous[index] == 1;
 
-            _memory_summary[index] =
-                alive_count > majority_threshold ? 1 : 0;
+            cell_state summarized_state = current[index];
+
+            if (alive_count > majority_threshold) {
+                summarized_state = 1;
+            }
+            else if (alive_count * 2 < memory_depth) {
+                summarized_state = 0;
+            }
+
+            // A tie preserves the most recent cell state.
+            _memory_summary[index] = summarized_state;
         }
     }
 
@@ -157,10 +170,8 @@ void automaton::step() {
             current
         );
 
-        if (_history.size() >
-            static_cast<std::size_t>(memory_depth)) {
+        if (_history.size() > history_size)
             _history.pop_back();
-        }
 
         _history_valid = true;
     }
@@ -169,7 +180,6 @@ void automaton::step() {
 
     ++_generation_count;
 }
-
 
 void automaton::randomize(std::uint32_t seed) {
     const std::size_t states = _rule->state_count();
@@ -421,8 +431,13 @@ void automaton::reset_history() {
             "Rule memory depth cannot be negative."
         );
 
+    const std::size_t history_size =
+        depth > 0
+        ? static_cast<std::size_t>(depth - 1)
+        : 0;
+
     _history.assign(
-        static_cast<std::size_t>(depth),
+        history_size,
         _storage.current()
     );
 

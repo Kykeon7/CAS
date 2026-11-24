@@ -130,7 +130,6 @@ add_executable(CAS
     src/automata/topology.cpp
 
     # Rules
-    # Rules
     src/automata/rules/beehive.cpp
     src/automata/rules/binary.cpp
     src/automata/rules/factory.cpp

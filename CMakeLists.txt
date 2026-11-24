@@ -238,10 +238,14 @@ add_executable(CAS
 )
 
 # ============================================================
-# Platform-specific application resources
+# Platform-specific application configuration
 # ============================================================
 
 if(WIN32)
+    set_target_properties(CAS PROPERTIES
+        WIN32_EXECUTABLE "$<NOT:$<CONFIG:Debug>>"
+    )
+
     target_sources(CAS PRIVATE
         resources/icons/CAS.rc
     )

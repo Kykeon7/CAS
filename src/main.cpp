@@ -1,4 +1,7 @@
 #include <application/application.h>
+
+#include <SDL3/SDL_main.h>
+
 #include <exception>
 #include <stdexcept>
 
@@ -11,7 +14,7 @@ int main(int argc, char* argv[]) {
 
     auto& logger = cas::system::logger::instance();
 
-    constexpr bool console_output = true;
+    constexpr bool console_output = false;
 
     try {
         if (!cas::system::set_console_enabled(console_output))

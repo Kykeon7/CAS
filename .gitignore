@@ -381,3 +381,4 @@ out/
 /cmake-build-*/
 /vcpkg_installed/
 /CMakeUserPresets.json
+/include/automata/pattern_monitor.h
